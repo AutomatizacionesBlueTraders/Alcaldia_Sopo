@@ -114,10 +114,10 @@ HU cubiertas: HU-ADMIN-35 a HU-ADMIN-38
 
 | Fase | Nombre | Estado |
 |------|--------|--------|
-| 1 | Infraestructura + BD | En progreso |
-| 2 | Backend API Completo | Pendiente |
-| 3 | Frontend: Dependencia | Pendiente |
-| 4 | Frontend: Administradora | Pendiente |
-| 5 | Frontend: Conductor | Pendiente |
-| 6 | Flujos n8n | Pendiente |
+| 1 | Infraestructura + BD | Completada |
+| 2 | Backend API Completo | Completada |
+| 3 | Frontend: Dependencia | Completada |
+| 4 | Frontend: Administradora | Completada |
+| 5 | Frontend: Conductor | Completada |
+| 6 | Flujos n8n | Pendiente (requiere credenciales Meta WhatsApp) |
 | 7 | Reportes | Pendiente |
