@@ -18,11 +18,15 @@ import DetalleSolicitudAdmin from './pages/admin/DetalleSolicitudAdmin';
 import Vehiculos from './pages/admin/Vehiculos';
 import Conductores from './pages/admin/Conductores';
 import Documentos from './pages/admin/Documentos';
-import Novedades from './pages/admin/Novedades';
-import Combustible from './pages/admin/Combustible';
+import AdminNovedades from './pages/admin/Novedades';
+import AdminCombustible from './pages/admin/Combustible';
 
-// Conductor (placeholder)
+// Conductor
 import ConductorDashboard from './pages/conductor/Dashboard';
+import MisServicios from './pages/conductor/MisServicios';
+import DetalleServicio from './pages/conductor/DetalleServicio';
+import ConductorCombustible from './pages/conductor/Combustible';
+import ConductorNovedades from './pages/conductor/Novedades';
 
 export default function App() {
   return (
@@ -56,8 +60,8 @@ export default function App() {
             <Route path="vehiculos" element={<Vehiculos />} />
             <Route path="conductores" element={<Conductores />} />
             <Route path="documentos" element={<Documentos />} />
-            <Route path="novedades" element={<Novedades />} />
-            <Route path="combustible" element={<Combustible />} />
+            <Route path="novedades" element={<AdminNovedades />} />
+            <Route path="combustible" element={<AdminCombustible />} />
           </Route>
 
           {/* Conductor */}
@@ -67,6 +71,10 @@ export default function App() {
             </ProtectedRoute>
           }>
             <Route index element={<ConductorDashboard />} />
+            <Route path="lista" element={<MisServicios />} />
+            <Route path=":id" element={<DetalleServicio />} />
+            <Route path="combustible" element={<ConductorCombustible />} />
+            <Route path="novedades" element={<ConductorNovedades />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/login" replace />} />
