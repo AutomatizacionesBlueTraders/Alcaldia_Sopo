@@ -2,6 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const db = require('./config/db');
 const authRoutes = require('./routes/auth');
+const solicitudesRoutes = require('./routes/solicitudes');
+const adminRoutes = require('./routes/admin');
+const conductorRoutes = require('./routes/conductor');
+const catalogosRoutes = require('./routes/catalogos');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -23,6 +27,10 @@ app.get('/api/health', async (req, res) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/solicitudes', solicitudesRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/conductor', conductorRoutes);
+app.use('/api/catalogos', catalogosRoutes);
 
 // Start
 app.listen(PORT, () => {
