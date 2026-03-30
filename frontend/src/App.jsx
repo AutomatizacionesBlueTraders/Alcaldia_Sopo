@@ -11,10 +11,17 @@ import NuevaSolicitud from './pages/dependencia/NuevaSolicitud';
 import ListaSolicitudes from './pages/dependencia/ListaSolicitudes';
 import DetalleSolicitud from './pages/dependencia/DetalleSolicitud';
 
-// Admin (placeholder por ahora)
+// Admin
 import AdminDashboard from './pages/admin/Dashboard';
+import AdminSolicitudes from './pages/admin/Solicitudes';
+import DetalleSolicitudAdmin from './pages/admin/DetalleSolicitudAdmin';
+import Vehiculos from './pages/admin/Vehiculos';
+import Conductores from './pages/admin/Conductores';
+import Documentos from './pages/admin/Documentos';
+import Novedades from './pages/admin/Novedades';
+import Combustible from './pages/admin/Combustible';
 
-// Conductor (placeholder por ahora)
+// Conductor (placeholder)
 import ConductorDashboard from './pages/conductor/Dashboard';
 
 export default function App() {
@@ -44,6 +51,13 @@ export default function App() {
             </ProtectedRoute>
           }>
             <Route index element={<AdminDashboard />} />
+            <Route path="solicitudes" element={<AdminSolicitudes />} />
+            <Route path="solicitudes/:id" element={<DetalleSolicitudAdmin />} />
+            <Route path="vehiculos" element={<Vehiculos />} />
+            <Route path="conductores" element={<Conductores />} />
+            <Route path="documentos" element={<Documentos />} />
+            <Route path="novedades" element={<Novedades />} />
+            <Route path="combustible" element={<Combustible />} />
           </Route>
 
           {/* Conductor */}
