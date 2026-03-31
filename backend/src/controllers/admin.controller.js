@@ -58,9 +58,13 @@ async function listarConductores(req, res) {
 
 async function crearConductor(req, res) {
   try {
-    const [conductor] = await db('conductores').insert(req.body).returning('*');
+    const { nombre, telefono, licencia, vencimiento_licencia, estado, usuario_id } = req.body;
+    const data = { nombre, telefono, licencia, vencimiento_licencia: vencimiento_licencia || null, estado: estado || 'activo' };
+    if (usuario_id) data.usuario_id = usuario_id;
+    const [conductor] = await db('conductores').insert(data).returning('*');
     res.status(201).json(conductor);
   } catch (err) {
+    console.error('Error al crear conductor:', err);
     res.status(500).json({ error: 'Error al crear conductor' });
   }
 }

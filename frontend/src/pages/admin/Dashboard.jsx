@@ -65,7 +65,7 @@ export default function AdminDashboard() {
               <tr><td colSpan="5" className="px-4 py-6 text-center text-gray-400">Sin servicios hoy</td></tr>
             ) : servicios.map(s => (
               <tr key={s.id} className="border-t">
-                <td className="px-4 py-2">{s.hora_inicio} - {s.hora_fin}</td>
+                <td className="px-4 py-2">{s.hora_inicio?.substring(0, 5)} - {s.hora_fin?.substring(0, 5)}</td>
                 <td className="px-4 py-2">{s.destino}</td>
                 <td className="px-4 py-2">{s.placa} {s.marca}</td>
                 <td className="px-4 py-2">{s.conductor_nombre}</td>

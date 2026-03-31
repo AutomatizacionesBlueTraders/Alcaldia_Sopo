@@ -80,8 +80,8 @@ export default function Documentos() {
               <tr key={d.id} className="border-t hover:bg-gray-50">
                 <td className="px-4 py-2 font-medium">{d.placa}</td>
                 <td className="px-4 py-2 uppercase text-xs">{d.tipo}</td>
-                <td className="px-4 py-2">{d.fecha_expedicion}</td>
-                <td className="px-4 py-2">{d.fecha_vencimiento}</td>
+                <td className="px-4 py-2">{d.fecha_expedicion?.substring(0, 10)}</td>
+                <td className="px-4 py-2">{d.fecha_vencimiento?.substring(0, 10)}</td>
                 <td className="px-4 py-2"><span className={`text-xs px-2 py-0.5 rounded ${semaforo(d.estado)}`}>{d.estado}</span></td>
               </tr>
             ))}

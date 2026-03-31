@@ -50,6 +50,11 @@ exports.seed = async function(knex) {
     { id: 2, usuario_id: 6, nombre: 'Miguel Ángel Torres', telefono: '3209876543', licencia: 'C2', vencimiento_licencia: '2027-03-20', estado: 'activo' },
   ]);
 
+  // Reset sequences after manual ID inserts
+  await knex.raw("SELECT setval('dependencias_id_seq', (SELECT MAX(id) FROM dependencias))");
+  await knex.raw("SELECT setval('usuarios_id_seq', (SELECT MAX(id) FROM usuarios))");
+  await knex.raw("SELECT setval('conductores_id_seq', (SELECT MAX(id) FROM conductores))");
+
   // Vehículos reales de la flota activa
   await knex('vehiculos').insert([
     // Motocicletas

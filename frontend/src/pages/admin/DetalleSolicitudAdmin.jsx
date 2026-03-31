@@ -30,7 +30,10 @@ export default function DetalleSolicitudAdmin() {
     const { data } = await api.get(`/admin/solicitudes/${id}`);
     setSol(data);
     if (['ENVIADA', 'PENDIENTE_PROGRAMACION'].includes(data.estado)) {
-      setProgForm(f => ({ ...f, fecha: data.fecha_servicio, hora_inicio: data.hora_inicio, hora_fin: data.hora_fin_estimada || '' }));
+      const fecha = data.fecha_servicio ? data.fecha_servicio.substring(0, 10) : '';
+      const hi = data.hora_inicio ? data.hora_inicio.substring(0, 5) : '';
+      const hf = data.hora_fin_estimada ? data.hora_fin_estimada.substring(0, 5) : '';
+      setProgForm(f => ({ ...f, fecha, hora_inicio: hi, hora_fin: hf }));
     }
     setLoading(false);
   }
@@ -104,8 +107,8 @@ export default function DetalleSolicitudAdmin() {
 
       <div className="bg-white rounded-lg shadow-sm border p-5 text-sm mb-4">
         <div className="grid grid-cols-2 gap-3">
-          <p><span className="font-medium text-gray-500">Fecha:</span> {sol.fecha_servicio}</p>
-          <p><span className="font-medium text-gray-500">Horario:</span> {sol.hora_inicio} - {sol.hora_fin_estimada || 'N/A'}</p>
+          <p><span className="font-medium text-gray-500">Fecha:</span> {sol.fecha_servicio?.substring(0, 10)}</p>
+          <p><span className="font-medium text-gray-500">Horario:</span> {sol.hora_inicio?.substring(0, 5)} - {sol.hora_fin_estimada?.substring(0, 5) || 'N/A'}</p>
           <p><span className="font-medium text-gray-500">Origen:</span> {sol.origen}</p>
           <p><span className="font-medium text-gray-500">Destino:</span> {sol.destino}</p>
           <p><span className="font-medium text-gray-500">Pasajeros:</span> {sol.pasajeros}</p>

@@ -74,7 +74,7 @@ export default function Combustible() {
               <tr><td colSpan="6" className="px-4 py-6 text-center text-gray-400">Sin registros</td></tr>
             ) : registros.map(r => (
               <tr key={r.id} className="border-t hover:bg-gray-50">
-                <td className="px-4 py-2">{r.fecha}</td>
+                <td className="px-4 py-2">{r.fecha?.substring(0, 10)}</td>
                 <td className="px-4 py-2 font-medium">{r.placa}</td>
                 <td className="px-4 py-2">{r.conductor_nombre || '-'}</td>
                 <td className="px-4 py-2">{parseFloat(r.galones).toFixed(1)}</td>

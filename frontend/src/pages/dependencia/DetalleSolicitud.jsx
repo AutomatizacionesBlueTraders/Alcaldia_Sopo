@@ -79,8 +79,8 @@ export default function DetalleSolicitud() {
 
       <div className="bg-white rounded-lg shadow-sm border p-5 space-y-3 text-sm mb-4">
         <div className="grid grid-cols-2 gap-3">
-          <p><span className="font-medium text-gray-500">Fecha:</span> {sol.fecha_servicio}</p>
-          <p><span className="font-medium text-gray-500">Horario:</span> {sol.hora_inicio} - {sol.hora_fin_estimada || 'N/A'}</p>
+          <p><span className="font-medium text-gray-500">Fecha:</span> {sol.fecha_servicio?.substring(0, 10)}</p>
+          <p><span className="font-medium text-gray-500">Horario:</span> {sol.hora_inicio?.substring(0, 5)} - {sol.hora_fin_estimada?.substring(0, 5) || 'N/A'}</p>
           <p><span className="font-medium text-gray-500">Origen:</span> {sol.origen}</p>
           <p><span className="font-medium text-gray-500">Destino:</span> {sol.destino}</p>
           <p><span className="font-medium text-gray-500">Pasajeros:</span> {sol.pasajeros}</p>

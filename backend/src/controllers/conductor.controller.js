@@ -67,11 +67,16 @@ async function iniciarServicio(req, res) {
 
     if (enEjecucion) return res.status(400).json({ error: 'Ya tienes un servicio en ejecución' });
 
+    const solicitud = await db('solicitudes').where({ id: asignacion.solicitud_id }).first();
+    if (!['PROGRAMADA', 'CONFIRMADA'].includes(solicitud.estado)) {
+      return res.status(400).json({ error: `No se puede iniciar servicio en estado ${solicitud.estado}` });
+    }
+
     await db('asignaciones').where({ id: asignacion.id }).update({ km_inicial });
     await db('solicitudes').where({ id: asignacion.solicitud_id }).update({ estado: 'EN_EJECUCION', updated_at: db.fn.now() });
     await db('historial_solicitudes').insert({
       solicitud_id: asignacion.solicitud_id,
-      estado_anterior: 'CONFIRMADA',
+      estado_anterior: solicitud.estado,
       estado_nuevo: 'EN_EJECUCION',
       usuario_id: req.user.id,
       notas: `KM inicial: ${km_inicial}`

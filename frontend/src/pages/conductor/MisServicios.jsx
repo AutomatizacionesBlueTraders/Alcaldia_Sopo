@@ -39,7 +39,7 @@ export default function MisServicios() {
             className="block bg-white rounded-lg shadow-sm border p-4 hover:border-primary-300 transition">
             <div className="flex justify-between items-start">
               <div>
-                <p className="font-medium text-gray-800">{s.fecha} — {s.hora_inicio}</p>
+                <p className="font-medium text-gray-800">{s.fecha?.substring(0, 10)} — {s.hora_inicio?.substring(0, 5)}</p>
                 <p className="text-sm text-gray-600">{s.origen} → {s.destino}</p>
                 <p className="text-xs text-gray-400">{s.placa} {s.marca} {s.modelo}</p>
                 {s.tipo_servicio && <p className="text-xs text-gray-400">{s.tipo_servicio}</p>}

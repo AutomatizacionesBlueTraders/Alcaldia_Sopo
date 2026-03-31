@@ -80,7 +80,7 @@ export default function ListaSolicitudes() {
                 <td className="px-4 py-2">
                   <Link to={`/solicitudes/${s.id}`} className="text-primary-600 hover:underline">{s.id}</Link>
                 </td>
-                <td className="px-4 py-2">{s.fecha_servicio}</td>
+                <td className="px-4 py-2">{s.fecha_servicio?.substring(0, 10)}</td>
                 <td className="px-4 py-2 truncate max-w-[150px]">{s.origen}</td>
                 <td className="px-4 py-2 truncate max-w-[150px]">{s.destino}</td>
                 <td className="px-4 py-2"><EstadoBadge estado={s.estado} /></td>

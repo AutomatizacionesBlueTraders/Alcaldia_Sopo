@@ -70,8 +70,8 @@ export default function DetalleServicio() {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border p-5 text-sm space-y-2 mb-4">
-        <p><span className="font-medium text-gray-500">Fecha:</span> {servicio.fecha || servicio.fecha_servicio}</p>
-        <p><span className="font-medium text-gray-500">Horario:</span> {servicio.hora_inicio} - {servicio.hora_fin}</p>
+        <p><span className="font-medium text-gray-500">Fecha:</span> {(servicio.fecha || servicio.fecha_servicio)?.substring(0, 10)}</p>
+        <p><span className="font-medium text-gray-500">Horario:</span> {servicio.hora_inicio?.substring(0, 5)} - {servicio.hora_fin?.substring(0, 5)}</p>
         <p><span className="font-medium text-gray-500">Origen:</span> {servicio.origen}</p>
         <p><span className="font-medium text-gray-500">Destino:</span> {servicio.destino}</p>
         <p><span className="font-medium text-gray-500">Pasajeros:</span> {servicio.pasajeros}</p>

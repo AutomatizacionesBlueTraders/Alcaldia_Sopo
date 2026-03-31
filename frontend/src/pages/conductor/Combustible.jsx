@@ -94,7 +94,7 @@ export default function ConductorCombustible() {
               <tr><td colSpan="4" className="px-4 py-6 text-center text-gray-400">Sin registros</td></tr>
             ) : registros.map(r => (
               <tr key={r.id} className="border-t">
-                <td className="px-4 py-2">{r.fecha}</td>
+                <td className="px-4 py-2">{r.fecha?.substring(0, 10)}</td>
                 <td className="px-4 py-2">{parseFloat(r.galones).toFixed(1)}</td>
                 <td className="px-4 py-2">${parseFloat(r.valor_cop).toLocaleString('es-CO')}</td>
                 <td className="px-4 py-2">{r.km_registro ? parseFloat(r.km_registro).toLocaleString() : '-'}</td>

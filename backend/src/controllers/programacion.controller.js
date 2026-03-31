@@ -102,7 +102,8 @@ async function programar(req, res) {
 
     res.status(201).json(asignacion);
   } catch (err) {
-    res.status(500).json({ error: 'Error al programar' });
+    console.error('Error al programar:', err);
+    res.status(500).json({ error: 'Error al programar', detail: err.message });
   }
 }
 
