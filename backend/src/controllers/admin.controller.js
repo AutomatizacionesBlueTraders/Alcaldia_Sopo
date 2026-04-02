@@ -221,11 +221,108 @@ async function dependencias(req, res) {
   }
 }
 
+// ============ HISTORIAL CONDUCTOR ============
+
+async function historialConductor(req, res) {
+  try {
+    const conductor = await db('conductores').where({ id: req.params.id }).first();
+    if (!conductor) return res.status(404).json({ error: 'Conductor no encontrado' });
+
+    // Servicios completados (historial)
+    const completados = await db('asignaciones')
+      .join('solicitudes', 'asignaciones.solicitud_id', 'solicitudes.id')
+      .join('vehiculos', 'asignaciones.vehiculo_id', 'vehiculos.id')
+      .where('asignaciones.conductor_id', conductor.id)
+      .whereIn('solicitudes.estado', ['FINALIZADA'])
+      .select(
+        'asignaciones.id as asignacion_id', 'asignaciones.fecha', 'asignaciones.hora_inicio', 'asignaciones.hora_fin',
+        'asignaciones.km_inicial', 'asignaciones.km_final',
+        'solicitudes.id as solicitud_id', 'solicitudes.origen', 'solicitudes.destino',
+        'solicitudes.estado as estado_solicitud', 'solicitudes.tipo_servicio', 'solicitudes.pasajeros',
+        'vehiculos.id as vehiculo_id', 'vehiculos.placa', 'vehiculos.marca', 'vehiculos.modelo'
+      )
+      .orderBy('asignaciones.fecha', 'desc');
+
+    // Servicios pendientes (programados, confirmados, en ejecución)
+    const pendientes = await db('asignaciones')
+      .join('solicitudes', 'asignaciones.solicitud_id', 'solicitudes.id')
+      .join('vehiculos', 'asignaciones.vehiculo_id', 'vehiculos.id')
+      .where('asignaciones.conductor_id', conductor.id)
+      .whereIn('solicitudes.estado', ['PROGRAMADA', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA', 'EN_EJECUCION'])
+      .select(
+        'asignaciones.id as asignacion_id', 'asignaciones.fecha', 'asignaciones.hora_inicio', 'asignaciones.hora_fin',
+        'solicitudes.id as solicitud_id', 'solicitudes.origen', 'solicitudes.destino',
+        'solicitudes.estado as estado_solicitud', 'solicitudes.tipo_servicio', 'solicitudes.pasajeros',
+        'vehiculos.id as vehiculo_id', 'vehiculos.placa', 'vehiculos.marca', 'vehiculos.modelo'
+      )
+      .orderBy('asignaciones.fecha', 'asc');
+
+    // Vehículo actual: el del servicio más próximo pendiente o en ejecución
+    const vehiculoActual = pendientes.length > 0
+      ? { id: pendientes[0].vehiculo_id, placa: pendientes[0].placa, marca: pendientes[0].marca, modelo: pendientes[0].modelo }
+      : null;
+
+    res.json({ conductor, completados, pendientes, vehiculo_actual: vehiculoActual });
+  } catch (err) {
+    console.error('Error historial conductor:', err);
+    res.status(500).json({ error: 'Error al obtener historial del conductor' });
+  }
+}
+
+// ============ HISTORIAL VEHÍCULO ============
+
+async function historialVehiculo(req, res) {
+  try {
+    const vehiculo = await db('vehiculos').where({ id: req.params.id }).first();
+    if (!vehiculo) return res.status(404).json({ error: 'Vehículo no encontrado' });
+
+    // Servicios completados
+    const completados = await db('asignaciones')
+      .join('solicitudes', 'asignaciones.solicitud_id', 'solicitudes.id')
+      .join('conductores', 'asignaciones.conductor_id', 'conductores.id')
+      .where('asignaciones.vehiculo_id', vehiculo.id)
+      .whereIn('solicitudes.estado', ['FINALIZADA'])
+      .select(
+        'asignaciones.id as asignacion_id', 'asignaciones.fecha', 'asignaciones.hora_inicio', 'asignaciones.hora_fin',
+        'asignaciones.km_inicial', 'asignaciones.km_final',
+        'solicitudes.id as solicitud_id', 'solicitudes.origen', 'solicitudes.destino',
+        'solicitudes.estado as estado_solicitud', 'solicitudes.tipo_servicio', 'solicitudes.pasajeros',
+        'conductores.id as conductor_id', 'conductores.nombre as conductor_nombre', 'conductores.telefono as conductor_telefono'
+      )
+      .orderBy('asignaciones.fecha', 'desc');
+
+    // Servicios pendientes
+    const pendientes = await db('asignaciones')
+      .join('solicitudes', 'asignaciones.solicitud_id', 'solicitudes.id')
+      .join('conductores', 'asignaciones.conductor_id', 'conductores.id')
+      .where('asignaciones.vehiculo_id', vehiculo.id)
+      .whereIn('solicitudes.estado', ['PROGRAMADA', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA', 'EN_EJECUCION'])
+      .select(
+        'asignaciones.id as asignacion_id', 'asignaciones.fecha', 'asignaciones.hora_inicio', 'asignaciones.hora_fin',
+        'solicitudes.id as solicitud_id', 'solicitudes.origen', 'solicitudes.destino',
+        'solicitudes.estado as estado_solicitud', 'solicitudes.tipo_servicio', 'solicitudes.pasajeros',
+        'conductores.id as conductor_id', 'conductores.nombre as conductor_nombre', 'conductores.telefono as conductor_telefono'
+      )
+      .orderBy('asignaciones.fecha', 'asc');
+
+    // Conductor actual: el del servicio más próximo
+    const conductorActual = pendientes.length > 0
+      ? { id: pendientes[0].conductor_id, nombre: pendientes[0].conductor_nombre, telefono: pendientes[0].conductor_telefono }
+      : null;
+
+    res.json({ vehiculo, completados, pendientes, conductor_actual: conductorActual });
+  } catch (err) {
+    console.error('Error historial vehículo:', err);
+    res.status(500).json({ error: 'Error al obtener historial del vehículo' });
+  }
+}
+
 module.exports = {
   listarVehiculos, crearVehiculo, actualizarVehiculo, desactivarVehiculo,
   listarConductores, crearConductor, actualizarConductor, desactivarConductor,
   listarDocumentos, crearDocumento, actualizarDocumento,
   listarNovedades, actualizarNovedad,
   listarMantenimientos, crearMantenimiento, actualizarMantenimiento,
-  listarCombustible, dependencias
+  listarCombustible, dependencias,
+  historialConductor, historialVehiculo
 };

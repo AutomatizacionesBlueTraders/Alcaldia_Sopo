@@ -123,7 +123,7 @@ async function reprogramar(req, res) {
     const newInicio = hora_inicio || asignacion.hora_inicio;
     const newFin = hora_fin || asignacion.hora_fin;
 
-    // Verificar nueva disponibilidad
+    // Verificar nueva disponibilidad vehículo
     const conflictoVeh = await db('calendario_vehiculos')
       .where({ vehiculo_id: newVeh, fecha: newFecha, estado: 'activo' })
       .where(function() {
@@ -131,6 +131,15 @@ async function reprogramar(req, res) {
       }).first();
 
     if (conflictoVeh) return res.status(409).json({ error: 'Vehículo no disponible en nuevo horario' });
+
+    // Verificar nueva disponibilidad conductor
+    const conflictoCond = await db('calendario_conductores')
+      .where({ conductor_id: newCond, fecha: newFecha, estado: 'activo' })
+      .where(function() {
+        this.where('hora_inicio', '<', newFin).andWhere('hora_fin', '>', newInicio);
+      }).first();
+
+    if (conflictoCond) return res.status(409).json({ error: 'Conductor no disponible en nuevo horario' });
 
     // Actualizar asignación
     await db('asignaciones').where({ id: asignacion.id }).update({

@@ -16,7 +16,9 @@ import AdminDashboard from './pages/admin/Dashboard';
 import AdminSolicitudes from './pages/admin/Solicitudes';
 import DetalleSolicitudAdmin from './pages/admin/DetalleSolicitudAdmin';
 import Vehiculos from './pages/admin/Vehiculos';
+import DetalleVehiculo from './pages/admin/DetalleVehiculo';
 import Conductores from './pages/admin/Conductores';
+import DetalleConductor from './pages/admin/DetalleConductor';
 import Documentos from './pages/admin/Documentos';
 import AdminNovedades from './pages/admin/Novedades';
 import AdminCombustible from './pages/admin/Combustible';
@@ -58,7 +60,9 @@ export default function App() {
             <Route path="solicitudes" element={<AdminSolicitudes />} />
             <Route path="solicitudes/:id" element={<DetalleSolicitudAdmin />} />
             <Route path="vehiculos" element={<Vehiculos />} />
+            <Route path="vehiculos/:id" element={<DetalleVehiculo />} />
             <Route path="conductores" element={<Conductores />} />
+            <Route path="conductores/:id" element={<DetalleConductor />} />
             <Route path="documentos" element={<Documentos />} />
             <Route path="novedades" element={<AdminNovedades />} />
             <Route path="combustible" element={<AdminCombustible />} />

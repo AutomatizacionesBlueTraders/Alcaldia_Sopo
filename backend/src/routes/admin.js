@@ -52,6 +52,10 @@ router.patch('/mantenimientos/:id', ...isAdmin, admin.actualizarMantenimiento);
 // Combustible
 router.get('/combustible', ...isAdmin, admin.listarCombustible);
 
+// Historial
+router.get('/conductores/:id/historial', ...isAdmin, admin.historialConductor);
+router.get('/vehiculos/:id/historial', ...isAdmin, admin.historialVehiculo);
+
 // Catálogos
 router.get('/dependencias', ...isAdmin, admin.dependencias);
 

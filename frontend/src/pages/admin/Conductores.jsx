@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 import Modal from '../../components/Modal';
 
@@ -64,7 +65,9 @@ export default function Conductores() {
               <tr><td colSpan="6" className="px-4 py-6 text-center text-gray-400">Cargando...</td></tr>
             ) : conductores.map(c => (
               <tr key={c.id} className="border-t hover:bg-gray-50">
-                <td className="px-4 py-2 font-medium">{c.nombre}</td>
+                <td className="px-4 py-2 font-medium">
+                  <Link to={`/admin/conductores/${c.id}`} className="text-primary-600 hover:underline">{c.nombre}</Link>
+                </td>
                 <td className="px-4 py-2">{c.telefono}</td>
                 <td className="px-4 py-2">{c.licencia}</td>
                 <td className="px-4 py-2">{c.vencimiento_licencia?.split('T')[0]}</td>

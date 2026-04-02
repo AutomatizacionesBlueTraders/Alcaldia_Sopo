@@ -17,6 +17,13 @@ export default function DetalleSolicitudAdmin() {
   const [progForm, setProgForm] = useState({ vehiculo_id: '', conductor_id: '', fecha: '', hora_inicio: '', hora_fin: '' });
   const [progLoading, setProgLoading] = useState(false);
 
+  // Reprogramación
+  const [reprogModal, setReprogModal] = useState(false);
+  const [reprogForm, setReprogForm] = useState({ vehiculo_id: '', conductor_id: '', fecha: '', hora_inicio: '', hora_fin: '' });
+  const [reprogVehiculos, setReprogVehiculos] = useState([]);
+  const [reprogConductores, setReprogConductores] = useState([]);
+  const [reprogLoading, setReprogLoading] = useState(false);
+
   // Cancelar/Rechazar
   const [cancelModal, setCancelModal] = useState(false);
   const [rechazarModal, setRechazarModal] = useState(false);
@@ -73,6 +80,58 @@ export default function DetalleSolicitudAdmin() {
     }
   }
 
+  // Reprogramar
+  function abrirReprogramar() {
+    const a = sol.asignacion;
+    if (a) {
+      setReprogForm({
+        vehiculo_id: a.vehiculo_id || '',
+        conductor_id: a.conductor_id || '',
+        fecha: a.fecha?.split('T')[0] || '',
+        hora_inicio: a.hora_inicio?.substring(0, 5) || '',
+        hora_fin: a.hora_fin?.substring(0, 5) || ''
+      });
+    }
+    setReprogModal(true);
+  }
+
+  async function buscarDisponiblesReprog() {
+    if (!reprogForm.fecha || !reprogForm.hora_inicio || !reprogForm.hora_fin) return;
+    const params = { fecha: reprogForm.fecha, hora_inicio: reprogForm.hora_inicio, hora_fin: reprogForm.hora_fin };
+    const [v, c] = await Promise.all([
+      api.get('/admin/vehiculos/disponibles', { params }),
+      api.get('/admin/conductores/disponibles', { params })
+    ]);
+    setReprogVehiculos(v.data);
+    setReprogConductores(c.data);
+  }
+
+  useEffect(() => {
+    if (reprogModal) buscarDisponiblesReprog();
+  }, [reprogModal, reprogForm.fecha, reprogForm.hora_inicio, reprogForm.hora_fin]);
+
+  async function handleReprogramar() {
+    setReprogLoading(true);
+    try {
+      const body = {};
+      const a = sol.asignacion;
+      if (reprogForm.vehiculo_id && reprogForm.vehiculo_id !== a.vehiculo_id) body.vehiculo_id = parseInt(reprogForm.vehiculo_id);
+      if (reprogForm.conductor_id && reprogForm.conductor_id !== a.conductor_id) body.conductor_id = parseInt(reprogForm.conductor_id);
+      if (reprogForm.fecha && reprogForm.fecha !== a.fecha?.split('T')[0]) body.fecha = reprogForm.fecha;
+      if (reprogForm.hora_inicio && reprogForm.hora_inicio !== a.hora_inicio?.substring(0, 5)) body.hora_inicio = reprogForm.hora_inicio;
+      if (reprogForm.hora_fin && reprogForm.hora_fin !== a.hora_fin?.substring(0, 5)) body.hora_fin = reprogForm.hora_fin;
+
+      await api.patch(`/admin/asignaciones/${a.id}/reprogramar`, body);
+      setReprogModal(false);
+      setMsg('Servicio reprogramado exitosamente');
+      cargar();
+    } catch (err) {
+      setMsg(err.response?.data?.error || 'Error al reprogramar');
+    } finally {
+      setReprogLoading(false);
+    }
+  }
+
   async function handleCancelar() {
     setActionLoading(true);
     try {
@@ -95,6 +154,7 @@ export default function DetalleSolicitudAdmin() {
   if (!sol) return <p className="text-red-500">No encontrada</p>;
 
   const puedeProgramar = ['ENVIADA', 'PENDIENTE_PROGRAMACION'].includes(sol.estado);
+  const puedeReprogramar = ['PROGRAMADA', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA'].includes(sol.estado) && sol.asignacion;
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -132,6 +192,11 @@ export default function DetalleSolicitudAdmin() {
         {puedeProgramar && (
           <button onClick={() => setProgModal(true)} className="px-4 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700">
             Programar servicio
+          </button>
+        )}
+        {puedeReprogramar && (
+          <button onClick={abrirReprogramar} className="px-4 py-2 bg-amber-500 text-white rounded text-sm hover:bg-amber-600">
+            Reprogramar
           </button>
         )}
         <button onClick={() => setCancelModal(true)} className="px-4 py-2 border border-red-300 text-red-600 rounded text-sm hover:bg-red-50">Cancelar</button>
@@ -227,6 +292,62 @@ export default function DetalleSolicitudAdmin() {
           <button onClick={() => setRechazarModal(false)} className="px-4 py-2 border rounded text-sm">Volver</button>
           <button onClick={handleRechazar} disabled={!motivo || actionLoading}
             className="px-4 py-2 bg-gray-700 text-white rounded text-sm disabled:opacity-50">Rechazar</button>
+        </div>
+      </Modal>
+
+      {/* Modal Reprogramar */}
+      <Modal open={reprogModal} onClose={() => setReprogModal(false)} title="Reprogramar Servicio">
+        <p className="text-xs text-gray-500 mb-3">Modifique la fecha, horario, vehículo o conductor según la novedad.</p>
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="text-xs text-gray-500">Fecha</label>
+              <input type="date" value={reprogForm.fecha} onChange={e => setReprogForm({...reprogForm, fecha: e.target.value})}
+                className="w-full border rounded px-2 py-1.5 text-sm" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">Hora inicio</label>
+              <input type="time" value={reprogForm.hora_inicio} onChange={e => setReprogForm({...reprogForm, hora_inicio: e.target.value})}
+                className="w-full border rounded px-2 py-1.5 text-sm" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">Hora fin</label>
+              <input type="time" value={reprogForm.hora_fin} onChange={e => setReprogForm({...reprogForm, hora_fin: e.target.value})}
+                className="w-full border rounded px-2 py-1.5 text-sm" />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-500">Vehículo ({reprogVehiculos.length} disponibles)</label>
+            <select value={reprogForm.vehiculo_id} onChange={e => setReprogForm({...reprogForm, vehiculo_id: e.target.value})}
+              className="w-full border rounded px-2 py-1.5 text-sm">
+              <option value="">Seleccionar...</option>
+              {sol.vehiculo && !reprogVehiculos.find(v => v.id === sol.vehiculo.id) && (
+                <option value={sol.vehiculo.id}>{sol.vehiculo.placa} — {sol.vehiculo.marca} {sol.vehiculo.modelo} (actual)</option>
+              )}
+              {reprogVehiculos.map(v => <option key={v.id} value={v.id}>{v.placa} — {v.marca} {v.modelo}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-500">Conductor ({reprogConductores.length} disponibles)</label>
+            <select value={reprogForm.conductor_id} onChange={e => setReprogForm({...reprogForm, conductor_id: e.target.value})}
+              className="w-full border rounded px-2 py-1.5 text-sm">
+              <option value="">Seleccionar...</option>
+              {sol.conductor && !reprogConductores.find(c => c.id === sol.conductor.id) && (
+                <option value={sol.conductor.id}>{sol.conductor.nombre} — {sol.conductor.telefono} (actual)</option>
+              )}
+              {reprogConductores.map(c => <option key={c.id} value={c.id}>{c.nombre} — {c.telefono}</option>)}
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setReprogModal(false)} className="px-4 py-2 border rounded text-sm">Cancelar</button>
+            <button onClick={handleReprogramar} disabled={!reprogForm.vehiculo_id || !reprogForm.conductor_id || reprogLoading}
+              className="px-4 py-2 bg-amber-500 text-white rounded text-sm disabled:opacity-50 hover:bg-amber-600">
+              {reprogLoading ? 'Reprogramando...' : 'Reprogramar'}
+            </button>
+          </div>
         </div>
       </Modal>
     </div>
