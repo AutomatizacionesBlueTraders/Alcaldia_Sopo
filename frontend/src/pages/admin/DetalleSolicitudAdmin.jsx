@@ -113,14 +113,14 @@ export default function DetalleSolicitudAdmin() {
   async function handleReprogramar() {
     setReprogLoading(true);
     try {
-      const body = {};
       const a = sol.asignacion;
-      if (reprogForm.vehiculo_id && reprogForm.vehiculo_id !== a.vehiculo_id) body.vehiculo_id = parseInt(reprogForm.vehiculo_id);
-      if (reprogForm.conductor_id && reprogForm.conductor_id !== a.conductor_id) body.conductor_id = parseInt(reprogForm.conductor_id);
-      if (reprogForm.fecha && reprogForm.fecha !== a.fecha?.split('T')[0]) body.fecha = reprogForm.fecha;
-      if (reprogForm.hora_inicio && reprogForm.hora_inicio !== a.hora_inicio?.substring(0, 5)) body.hora_inicio = reprogForm.hora_inicio;
-      if (reprogForm.hora_fin && reprogForm.hora_fin !== a.hora_fin?.substring(0, 5)) body.hora_fin = reprogForm.hora_fin;
-
+      const body = {
+        vehiculo_id: parseInt(reprogForm.vehiculo_id) || a.vehiculo_id,
+        conductor_id: parseInt(reprogForm.conductor_id) || a.conductor_id,
+        fecha: reprogForm.fecha || a.fecha?.split('T')[0],
+        hora_inicio: reprogForm.hora_inicio || a.hora_inicio?.substring(0, 5),
+        hora_fin: reprogForm.hora_fin || a.hora_fin?.substring(0, 5),
+      };
       await api.patch(`/admin/asignaciones/${a.id}/reprogramar`, body);
       setReprogModal(false);
       setMsg('Servicio reprogramado exitosamente');
@@ -154,7 +154,7 @@ export default function DetalleSolicitudAdmin() {
   if (!sol) return <p className="text-red-500">No encontrada</p>;
 
   const puedeProgramar = ['ENVIADA', 'PENDIENTE_PROGRAMACION'].includes(sol.estado);
-  const puedeReprogramar = ['PROGRAMADA', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA'].includes(sol.estado) && sol.asignacion;
+  const puedeReprogramar = ['PROGRAMADA', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA', 'EN_EJECUCION'].includes(sol.estado) && sol.asignacion;
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -196,7 +196,7 @@ export default function DetalleSolicitudAdmin() {
         )}
         {puedeReprogramar && (
           <button onClick={abrirReprogramar} className="px-4 py-2 bg-amber-500 text-white rounded text-sm hover:bg-amber-600">
-            Reprogramar
+            {sol.estado === 'EN_EJECUCION' ? 'Cambiar asignación' : 'Reprogramar'}
           </button>
         )}
         <button onClick={() => setCancelModal(true)} className="px-4 py-2 border border-red-300 text-red-600 rounded text-sm hover:bg-red-50">Cancelar</button>

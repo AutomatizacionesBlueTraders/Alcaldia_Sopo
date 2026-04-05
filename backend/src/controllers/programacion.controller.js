@@ -110,8 +110,12 @@ async function programar(req, res) {
 async function reprogramar(req, res) {
   try {
     const { vehiculo_id, conductor_id, fecha, hora_inicio, hora_fin } = req.body;
+    if (!vehiculo_id || !conductor_id || !fecha || !hora_inicio || !hora_fin) {
+      return res.status(400).json({ error: 'Todos los campos son requeridos para reprogramar' });
+    }
     const asignacion = await db('asignaciones').where({ id: req.params.id }).first();
     if (!asignacion) return res.status(404).json({ error: 'Asignación no encontrada' });
+    const solicitud = await db('solicitudes').where({ id: asignacion.solicitud_id }).first();
 
     // Liberar bloqueos anteriores
     await db('calendario_vehiculos').where({ solicitud_id: asignacion.solicitud_id }).update({ estado: 'cancelado' });
@@ -158,10 +162,10 @@ async function reprogramar(req, res) {
 
     await db('historial_solicitudes').insert({
       solicitud_id: asignacion.solicitud_id,
-      estado_anterior: 'PROGRAMADA',
-      estado_nuevo: 'PROGRAMADA',
+      estado_anterior: solicitud.estado,
+      estado_nuevo: solicitud.estado,
       usuario_id: req.user.id,
-      notas: 'Reprogramación'
+      notas: `Reprogramación — Vehículo: ${newVeh}, Conductor: ${newCond}, Fecha: ${newFecha} ${newInicio}-${newFin}`
     });
 
     res.json({ message: 'Reprogramado' });

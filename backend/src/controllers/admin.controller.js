@@ -107,7 +107,11 @@ async function listarDocumentos(req, res) {
 
 async function crearDocumento(req, res) {
   try {
-    const [doc] = await db('documentos').insert(req.body).returning('*');
+    const { vehiculo_id, tipo, fecha_expedicion, fecha_vencimiento, estado, soporte_imagen } = req.body;
+    const data = { vehiculo_id, tipo, fecha_vencimiento, estado: estado || 'vigente' };
+    if (fecha_expedicion) data.fecha_expedicion = fecha_expedicion;
+    if (soporte_imagen) data.soporte_imagen = soporte_imagen;
+    const [doc] = await db('documentos').insert(data).returning('*');
     res.status(201).json(doc);
   } catch (err) {
     res.status(500).json({ error: 'Error al crear documento' });
@@ -116,7 +120,15 @@ async function crearDocumento(req, res) {
 
 async function actualizarDocumento(req, res) {
   try {
-    const [doc] = await db('documentos').where({ id: req.params.id }).update({ ...req.body, updated_at: db.fn.now() }).returning('*');
+    const { vehiculo_id, tipo, fecha_expedicion, fecha_vencimiento, estado, soporte_imagen } = req.body;
+    const data = { updated_at: db.fn.now() };
+    if (vehiculo_id) data.vehiculo_id = vehiculo_id;
+    if (tipo) data.tipo = tipo;
+    if (fecha_expedicion) data.fecha_expedicion = fecha_expedicion;
+    if (fecha_vencimiento) data.fecha_vencimiento = fecha_vencimiento;
+    if (estado) data.estado = estado;
+    if (soporte_imagen !== undefined) data.soporte_imagen = soporte_imagen;
+    const [doc] = await db('documentos').where({ id: req.params.id }).update(data).returning('*');
     if (!doc) return res.status(404).json({ error: 'Documento no encontrado' });
     res.json(doc);
   } catch (err) {
