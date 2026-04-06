@@ -1,0 +1,377 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:w="urn:schemas-microsoft-com:office:word"
+xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!--[if gte mso 9]>
+<xml>
+<w:WordDocument>
+<w:View>Print</w:View>
+<w:Zoom>100</w:Zoom>
+<w:DoNotOptimizeForBrowser/>
+</w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; margin: 2cm; }
+h1 { font-size: 20pt; color: #1a365d; text-align: center; border-bottom: 3px solid #2b6cb0; padding-bottom: 10px; }
+h2 { font-size: 14pt; color: #2b6cb0; margin-top: 30px; border-bottom: 1px solid #cbd5e0; padding-bottom: 5px; }
+h3 { font-size: 12pt; color: #2d3748; margin-top: 20px; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0 20px 0; font-size: 10pt; }
+th { background-color: #2b6cb0; color: white; padding: 8px 6px; text-align: left; border: 1px solid #2b6cb0; }
+td { padding: 6px; border: 1px solid #cbd5e0; vertical-align: top; }
+tr:nth-child(even) { background-color: #ebf4ff; }
+tr:hover { background-color: #bee3f8; }
+.info-table { width: auto; margin: 10px 0; }
+.info-table td { padding: 4px 12px; border: 1px solid #cbd5e0; }
+.info-table td:first-child { font-weight: bold; background-color: #ebf4ff; }
+.section-number { color: #2b6cb0; }
+.pass { width: 60px; text-align: center; }
+.summary-table th { background-color: #38a169; }
+.center { text-align: center; }
+p { line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<h1>Plan de Pruebas<br>Sistema de Transporte - Alcaldia de Sopo</h1>
+
+<table class="info-table">
+<tr><td>Fecha</td><td>30 de marzo de 2026</td></tr>
+<tr><td>Version</td><td>1.0</td></tr>
+<tr><td>Sistema</td><td>Sistema de Gestion de Transporte Municipal</td></tr>
+<tr><td>URL Local</td><td>http://localhost</td></tr>
+<tr><td>Elaborado por</td><td>Equipo de Desarrollo</td></tr>
+</table>
+
+<h2>Usuarios de Prueba</h2>
+
+<table>
+<tr><th>Rol</th><th>Email</th><th>Password</th></tr>
+<tr><td>Administradora</td><td>admin@sopo.gov.co</td><td>Sopo2026*</td></tr>
+<tr><td>Dependencia (Infraestructura)</td><td>infra@sopo.gov.co</td><td>Sopo2026*</td></tr>
+<tr><td>Dependencia (Gobierno)</td><td>gobierno@sopo.gov.co</td><td>Sopo2026*</td></tr>
+<tr><td>Dependencia (Cultura)</td><td>cultura@sopo.gov.co</td><td>Sopo2026*</td></tr>
+<tr><td>Conductor 1</td><td>conductor1@sopo.gov.co</td><td>Sopo2026*</td></tr>
+<tr><td>Conductor 2</td><td>conductor2@sopo.gov.co</td><td>Sopo2026*</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="section-number">1.</span> AUTENTICACION Y SEGURIDAD</h2>
+<!-- ============================================ -->
+
+<h3>1.1 Login</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>1.1.1</td><td>Login exitoso como admin</td><td>1. Ir a /login<br>2. Ingresar admin@sopo.gov.co / Sopo2026*<br>3. Click "Iniciar Sesion"</td><td>Redirige a /admin con dashboard</td><td class="center">&#9744;</td></tr>
+<tr><td>1.1.2</td><td>Login exitoso como dependencia</td><td>1. Ingresar infra@sopo.gov.co / Sopo2026*<br>2. Click "Iniciar Sesion"</td><td>Redirige a /solicitudes con dashboard</td><td class="center">&#9744;</td></tr>
+<tr><td>1.1.3</td><td>Login exitoso como conductor</td><td>1. Ingresar conductor1@sopo.gov.co / Sopo2026*<br>2. Click "Iniciar Sesion"</td><td>Redirige a /servicios con dashboard</td><td class="center">&#9744;</td></tr>
+<tr><td>1.1.4</td><td>Login con password incorrecto</td><td>1. Ingresar admin@sopo.gov.co / password123</td><td>Muestra error de credenciales invalidas</td><td class="center">&#9744;</td></tr>
+<tr><td>1.1.5</td><td>Login con email inexistente</td><td>1. Ingresar noexiste@sopo.gov.co / Sopo2026*</td><td>Muestra error de credenciales invalidas</td><td class="center">&#9744;</td></tr>
+<tr><td>1.1.6</td><td>Login con campos vacios</td><td>1. Dejar email y password vacios<br>2. Click "Iniciar Sesion"</td><td>Muestra validacion de campos requeridos</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>1.2 Sesion y Tokens</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>1.2.1</td><td>Logout</td><td>1. Login exitoso<br>2. Click "Cerrar Sesion"</td><td>Redirige a /login, token eliminado</td><td class="center">&#9744;</td></tr>
+<tr><td>1.2.2</td><td>Acceso sin autenticacion</td><td>1. Sin login, navegar a /admin</td><td>Redirige a /login</td><td class="center">&#9744;</td></tr>
+<tr><td>1.2.3</td><td>Acceso con rol incorrecto</td><td>1. Login como conductor<br>2. Navegar a /admin</td><td>Redirige a /no-autorizado</td><td class="center">&#9744;</td></tr>
+<tr><td>1.2.4</td><td>Refresh de token</td><td>1. Login exitoso<br>2. Esperar expiracion del access token<br>3. Hacer una accion</td><td>Token se renueva automaticamente, accion se completa</td><td class="center">&#9744;</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="section-number">2.</span> PORTAL DEPENDENCIA (Funcionario Solicitante)</h2>
+<!-- ============================================ -->
+
+<h3>2.1 Dashboard Dependencia</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>2.1.1</td><td>Ver dashboard</td><td>1. Login como infra@sopo.gov.co<br>2. Verificar dashboard</td><td>Muestra tarjetas con conteo por estado y solicitudes recientes</td><td class="center">&#9744;</td></tr>
+<tr><td>2.1.2</td><td>Contadores actualizados</td><td>1. Crear una solicitud<br>2. Volver al dashboard</td><td>Contador de ENVIADA incrementa en 1</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>2.2 Crear Solicitud</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>2.2.1</td><td>Crear solicitud exitosa</td><td>1. Click "Nueva Solicitud"<br>2. Llenar: fecha (manana o posterior), hora inicio, origen, destino<br>3. Confirmar en modal de preview</td><td>Solicitud creada, redirige a detalle con estado ENVIADA</td><td class="center">&#9744;</td></tr>
+<tr><td>2.2.2</td><td>Validacion fecha minima</td><td>1. Intentar seleccionar fecha de hoy o anterior</td><td>No permite seleccionar, fecha minima es manana</td><td class="center">&#9744;</td></tr>
+<tr><td>2.2.3</td><td>Campos obligatorios vacios</td><td>1. Intentar enviar sin fecha, hora, origen o destino</td><td>Muestra error de validacion por campos requeridos</td><td class="center">&#9744;</td></tr>
+<tr><td>2.2.4</td><td>Solicitud con todos los campos</td><td>1. Llenar todos los campos: fecha, hora inicio, hora fin estimada, origen, destino, pasajeros, tipo servicio, contacto nombre, contacto telefono, observaciones</td><td>Solicitud creada con todos los datos visibles en detalle</td><td class="center">&#9744;</td></tr>
+<tr><td>2.2.5</td><td>Preview antes de enviar</td><td>1. Llenar formulario<br>2. Verificar modal de confirmacion</td><td>Modal muestra resumen de todos los datos ingresados</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>2.3 Listar Solicitudes</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>2.3.1</td><td>Ver lista de solicitudes</td><td>1. Click "Mis Solicitudes"</td><td>Muestra tabla con solicitudes de la dependencia del usuario</td><td class="center">&#9744;</td></tr>
+<tr><td>2.3.2</td><td>Filtrar por estado</td><td>1. Seleccionar filtro estado = ENVIADA</td><td>Solo muestra solicitudes con estado ENVIADA</td><td class="center">&#9744;</td></tr>
+<tr><td>2.3.3</td><td>Filtrar por rango de fechas</td><td>1. Seleccionar fecha_desde y fecha_hasta</td><td>Solo muestra solicitudes dentro del rango</td><td class="center">&#9744;</td></tr>
+<tr><td>2.3.4</td><td>Paginacion</td><td>1. Tener mas de 20 solicitudes<br>2. Navegar entre paginas</td><td>Paginacion funciona correctamente, 20 items por pagina</td><td class="center">&#9744;</td></tr>
+<tr><td>2.3.5</td><td>No ve solicitudes de otra dependencia</td><td>1. Login como infra@sopo.gov.co</td><td>Solo ve solicitudes de Secretaria de Infraestructura</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>2.4 Detalle de Solicitud</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>2.4.1</td><td>Ver detalle completo</td><td>1. Click en una solicitud de la lista</td><td>Muestra toda la info: fecha, hora, origen, destino, estado, historial</td><td class="center">&#9744;</td></tr>
+<tr><td>2.4.2</td><td>Ver asignacion (si programada)</td><td>1. Ver detalle de solicitud PROGRAMADA</td><td>Muestra vehiculo y conductor asignados</td><td class="center">&#9744;</td></tr>
+<tr><td>2.4.3</td><td>Ver historial de cambios</td><td>1. Ver detalle de solicitud con varios cambios de estado</td><td>Muestra timeline con cada cambio de estado</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>2.5 Cancelar Solicitud</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>2.5.1</td><td>Cancelar solicitud ENVIADA</td><td>1. Abrir detalle de solicitud ENVIADA<br>2. Click "Cancelar"<br>3. Escribir motivo (10+ caracteres)<br>4. Confirmar</td><td>Estado cambia a CANCELADA, motivo registrado</td><td class="center">&#9744;</td></tr>
+<tr><td>2.5.2</td><td>Cancelar solicitud PENDIENTE_PROGRAMACION</td><td>1. Abrir detalle en PENDIENTE_PROGRAMACION<br>2. Cancelar con motivo</td><td>Estado cambia a CANCELADA</td><td class="center">&#9744;</td></tr>
+<tr><td>2.5.3</td><td>Motivo muy corto</td><td>1. Intentar cancelar con motivo de menos de 10 caracteres</td><td>No permite cancelar, muestra validacion</td><td class="center">&#9744;</td></tr>
+<tr><td>2.5.4</td><td>No puede cancelar PROGRAMADA</td><td>1. Abrir detalle de solicitud PROGRAMADA</td><td>Boton cancelar no disponible</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>2.6 Transferir Solicitud</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>2.6.1</td><td>Transferir a otra dependencia</td><td>1. Abrir solicitud ENVIADA<br>2. Click "Transferir"<br>3. Seleccionar dependencia destino<br>4. Escribir motivo</td><td>Estado TRANSFERIDA, aparece en la otra dependencia</td><td class="center">&#9744;</td></tr>
+<tr><td>2.6.2</td><td>No puede transferir PROGRAMADA</td><td>1. Abrir solicitud PROGRAMADA</td><td>Boton transferir no disponible</td><td class="center">&#9744;</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="section-number">3.</span> PORTAL ADMINISTRADORA</h2>
+<!-- ============================================ -->
+
+<h3>3.1 Dashboard Admin</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>3.1.1</td><td>Ver dashboard con KPIs</td><td>1. Login como admin@sopo.gov.co</td><td>Muestra 7 tarjetas: Nuevas hoy, Pendientes programacion, Programadas, Confirmadas, En ejecucion, Servicios hoy, Docs por vencer</td><td class="center">&#9744;</td></tr>
+<tr><td>3.1.2</td><td>Ver servicios del dia</td><td>1. Verificar tabla de servicios del dia</td><td>Muestra hora, destino, vehiculo, conductor, estado de servicios programados para hoy</td><td class="center">&#9744;</td></tr>
+<tr><td>3.1.3</td><td>KPIs reflejan datos reales</td><td>1. Crear solicitud desde dependencia<br>2. Verificar dashboard admin</td><td>Contador "Nuevas hoy" incrementa</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>3.2 Gestion de Solicitudes (Admin)</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>3.2.1</td><td>Listar todas las solicitudes</td><td>1. Click "Solicitudes"</td><td>Muestra solicitudes de TODAS las dependencias</td><td class="center">&#9744;</td></tr>
+<tr><td>3.2.2</td><td>Filtrar por dependencia</td><td>1. Filtrar por dependencia = Infraestructura</td><td>Solo muestra solicitudes de esa dependencia</td><td class="center">&#9744;</td></tr>
+<tr><td>3.2.3</td><td>Filtrar por estado</td><td>1. Filtrar por estado = ENVIADA</td><td>Solo muestra solicitudes ENVIADA</td><td class="center">&#9744;</td></tr>
+<tr><td>3.2.4</td><td>Filtrar por canal</td><td>1. Filtrar por canal = web</td><td>Solo muestra solicitudes creadas por web</td><td class="center">&#9744;</td></tr>
+<tr><td>3.2.5</td><td>Filtrar por rango de fechas</td><td>1. Seleccionar rango de fechas</td><td>Solo muestra solicitudes en ese rango</td><td class="center">&#9744;</td></tr>
+<tr><td>3.2.6</td><td>Filtros combinados</td><td>1. Filtrar por estado + dependencia + fechas</td><td>Resultado correcto con todos los filtros aplicados</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>3.3 Programar Servicio</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>3.3.1</td><td>Programar solicitud completa</td><td>1. Abrir solicitud ENVIADA o PENDIENTE_PROGRAMACION<br>2. Click "Programar"<br>3. Seleccionar fecha, hora inicio, hora fin<br>4. Seleccionar vehiculo disponible<br>5. Seleccionar conductor disponible<br>6. Confirmar</td><td>Estado cambia a PROGRAMADA, asignacion creada, calendario bloqueado</td><td class="center">&#9744;</td></tr>
+<tr><td>3.3.2</td><td>Verificar disponibilidad vehiculos</td><td>1. En modal de programacion, seleccionar fecha/hora</td><td>Solo muestra vehiculos sin conflicto en ese horario</td><td class="center">&#9744;</td></tr>
+<tr><td>3.3.3</td><td>Verificar disponibilidad conductores</td><td>1. En modal de programacion, seleccionar fecha/hora</td><td>Solo muestra conductores sin conflicto en ese horario</td><td class="center">&#9744;</td></tr>
+<tr><td>3.3.4</td><td>Vehiculo ya asignado no aparece</td><td>1. Programar servicio con vehiculo X<br>2. Intentar programar otro servicio en mismo horario</td><td>Vehiculo X no aparece como disponible</td><td class="center">&#9744;</td></tr>
+<tr><td>3.3.5</td><td>Conductor ya asignado no aparece</td><td>1. Programar servicio con conductor Y<br>2. Intentar programar otro en mismo horario</td><td>Conductor Y no aparece como disponible</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>3.4 Rechazar / Cancelar Solicitud (Admin)</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>3.4.1</td><td>Rechazar solicitud</td><td>1. Abrir solicitud<br>2. Click "Rechazar"<br>3. Escribir motivo</td><td>Estado cambia a RECHAZADA, motivo registrado en historial</td><td class="center">&#9744;</td></tr>
+<tr><td>3.4.2</td><td>Cancelar solicitud como admin</td><td>1. Abrir solicitud<br>2. Click "Cancelar"<br>3. Escribir motivo</td><td>Estado cambia a CANCELADA</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>3.5 Gestion de Vehiculos</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>3.5.1</td><td>Listar vehiculos</td><td>1. Click "Vehiculos"</td><td>Muestra tabla con todos los vehiculos de la flota</td><td class="center">&#9744;</td></tr>
+<tr><td>3.5.2</td><td>Filtrar por tipo</td><td>1. Filtrar tipo = vehiculo</td><td>Solo muestra vehiculos (no maquinaria)</td><td class="center">&#9744;</td></tr>
+<tr><td>3.5.3</td><td>Filtrar por estado</td><td>1. Filtrar estado = disponible</td><td>Solo muestra vehiculos disponibles</td><td class="center">&#9744;</td></tr>
+<tr><td>3.5.4</td><td>Crear vehiculo</td><td>1. Click "Nuevo"<br>2. Llenar placa, tipo, marca, modelo, anio<br>3. Guardar</td><td>Vehiculo aparece en la lista</td><td class="center">&#9744;</td></tr>
+<tr><td>3.5.5</td><td>Editar vehiculo</td><td>1. Click editar en un vehiculo<br>2. Cambiar marca<br>3. Guardar</td><td>Datos actualizados en la lista</td><td class="center">&#9744;</td></tr>
+<tr><td>3.5.6</td><td>Desactivar vehiculo</td><td>1. Click eliminar en un vehiculo<br>2. Confirmar</td><td>Vehiculo desaparece de la lista (soft delete)</td><td class="center">&#9744;</td></tr>
+<tr><td>3.5.7</td><td>Placa duplicada</td><td>1. Intentar crear vehiculo con placa existente</td><td>Muestra error de placa duplicada</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>3.6 Gestion de Conductores</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>3.6.1</td><td>Listar conductores</td><td>1. Click "Conductores"</td><td>Muestra tabla con todos los conductores activos</td><td class="center">&#9744;</td></tr>
+<tr><td>3.6.2</td><td>Crear conductor</td><td>1. Click "Nuevo"<br>2. Llenar nombre, telefono, licencia, vencimiento<br>3. Guardar</td><td>Conductor aparece en la lista</td><td class="center">&#9744;</td></tr>
+<tr><td>3.6.3</td><td>Editar conductor</td><td>1. Click editar<br>2. Cambiar telefono<br>3. Guardar</td><td>Datos actualizados</td><td class="center">&#9744;</td></tr>
+<tr><td>3.6.4</td><td>Desactivar conductor</td><td>1. Click eliminar<br>2. Confirmar</td><td>Conductor desaparece de la lista</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>3.7 Gestion de Documentos</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>3.7.1</td><td>Listar documentos</td><td>1. Click "Documentos"</td><td>Muestra lista de documentos vehiculares</td><td class="center">&#9744;</td></tr>
+<tr><td>3.7.2</td><td>Filtrar por tipo</td><td>1. Filtrar tipo = SOAT</td><td>Solo muestra documentos SOAT</td><td class="center">&#9744;</td></tr>
+<tr><td>3.7.3</td><td>Filtrar por estado</td><td>1. Filtrar estado = vencido</td><td>Solo muestra documentos vencidos (rojo)</td><td class="center">&#9744;</td></tr>
+<tr><td>3.7.4</td><td>Crear documento</td><td>1. Click "Nuevo"<br>2. Seleccionar vehiculo, tipo (SOAT/Seguro/Tecnomecanica), fechas<br>3. Guardar</td><td>Documento creado con estado correcto segun fecha</td><td class="center">&#9744;</td></tr>
+<tr><td>3.7.5</td><td>Colores por estado</td><td>1. Verificar lista con documentos en distintos estados</td><td>Verde = vigente, Amarillo = por vencer, Rojo = vencido</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>3.8 Gestion de Novedades</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>3.8.1</td><td>Listar novedades</td><td>1. Click "Novedades"</td><td>Muestra novedades reportadas por conductores</td><td class="center">&#9744;</td></tr>
+<tr><td>3.8.2</td><td>Filtrar por estado</td><td>1. Filtrar estado = pendiente</td><td>Solo muestra novedades pendientes</td><td class="center">&#9744;</td></tr>
+<tr><td>3.8.3</td><td>Filtrar por urgencia</td><td>1. Filtrar urgencia = critica</td><td>Solo muestra novedades criticas</td><td class="center">&#9744;</td></tr>
+<tr><td>3.8.4</td><td>Cambiar estado de novedad</td><td>1. Seleccionar nuevo estado (en_revision, resuelto, etc.)</td><td>Estado se actualiza correctamente</td><td class="center">&#9744;</td></tr>
+<tr><td>3.8.5</td><td>Badges de urgencia</td><td>1. Verificar colores de urgencia</td><td>Critica=rojo, Alta=naranja, Media=amarillo, Baja=gris</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>3.9 Combustible (Admin)</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>3.9.1</td><td>Listar registros de combustible</td><td>1. Click "Combustible"</td><td>Muestra tabla con todos los registros</td><td class="center">&#9744;</td></tr>
+<tr><td>3.9.2</td><td>Filtrar por vehiculo</td><td>1. Seleccionar un vehiculo</td><td>Solo muestra registros de ese vehiculo</td><td class="center">&#9744;</td></tr>
+<tr><td>3.9.3</td><td>Filtrar por fechas</td><td>1. Seleccionar rango de fechas</td><td>Solo registros en ese rango</td><td class="center">&#9744;</td></tr>
+<tr><td>3.9.4</td><td>Tarjetas resumen</td><td>1. Verificar tarjetas superiores</td><td>Muestra total galones y total invertido (COP) correctos</td><td class="center">&#9744;</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="section-number">4.</span> PORTAL CONDUCTOR</h2>
+<!-- ============================================ -->
+
+<h3>4.1 Dashboard Conductor</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>4.1.1</td><td>Ver dashboard</td><td>1. Login como conductor1@sopo.gov.co</td><td>Muestra 3 tarjetas: Servicios hoy, Novedades pendientes, Vehiculo asignado</td><td class="center">&#9744;</td></tr>
+<tr><td>4.1.2</td><td>Ver servicios del dia</td><td>1. Verificar lista de servicios</td><td>Muestra cards con servicios programados para hoy</td><td class="center">&#9744;</td></tr>
+<tr><td>4.1.3</td><td>Ver vehiculo asignado</td><td>1. Verificar tarjeta de vehiculo</td><td>Muestra placa y KM actual del vehiculo</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>4.2 Mis Servicios</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>4.2.1</td><td>Listar servicios</td><td>1. Click "Mis Servicios"</td><td>Muestra cards con servicios asignados</td><td class="center">&#9744;</td></tr>
+<tr><td>4.2.2</td><td>Filtrar por fecha</td><td>1. Seleccionar una fecha</td><td>Solo muestra servicios de esa fecha</td><td class="center">&#9744;</td></tr>
+<tr><td>4.2.3</td><td>Ver detalle de servicio</td><td>1. Click en un servicio</td><td>Muestra: fecha, horario, origen, destino, pasajeros, contacto, vehiculo</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>4.3 Iniciar y Finalizar Servicio</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>4.3.1</td><td>Iniciar servicio</td><td>1. Abrir servicio PROGRAMADA o CONFIRMADA<br>2. Click "Iniciar"<br>3. Ingresar km_inicial<br>4. Confirmar</td><td>Estado cambia a EN_EJECUCION, km registrado</td><td class="center">&#9744;</td></tr>
+<tr><td>4.3.2</td><td>Finalizar servicio</td><td>1. Abrir servicio EN_EJECUCION<br>2. Click "Finalizar"<br>3. Ingresar km_final<br>4. Confirmar</td><td>Estado cambia a FINALIZADA, km final registrado, km_actual del vehiculo actualizado</td><td class="center">&#9744;</td></tr>
+<tr><td>4.3.3</td><td>No puede iniciar servicio ya iniciado</td><td>1. Abrir servicio EN_EJECUCION</td><td>Boton "Iniciar" no disponible, solo "Finalizar"</td><td class="center">&#9744;</td></tr>
+<tr><td>4.3.4</td><td>No puede finalizar servicio no iniciado</td><td>1. Abrir servicio PROGRAMADA</td><td>Boton "Finalizar" no disponible, solo "Iniciar"</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>4.4 Combustible (Conductor)</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>4.4.1</td><td>Registrar combustible</td><td>1. Click "Combustible"<br>2. Llenar: fecha, galones, valor COP, KM<br>3. Enviar</td><td>Registro creado, aparece en historial</td><td class="center">&#9744;</td></tr>
+<tr><td>4.4.2</td><td>Ver historial de combustible</td><td>1. Verificar tabla inferior</td><td>Muestra todos los registros del vehiculo asignado</td><td class="center">&#9744;</td></tr>
+<tr><td>4.4.3</td><td>Campos requeridos</td><td>1. Intentar enviar sin llenar campos</td><td>Muestra validacion de campos requeridos</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>4.5 Novedades (Conductor)</h3>
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>4.5.1</td><td>Reportar novedad</td><td>1. Click "Novedades"<br>2. Seleccionar tipo (Dano mecanico, electrico, etc.)<br>3. Escribir descripcion<br>4. Seleccionar urgencia y puede_operar<br>5. Enviar</td><td>Novedad creada, aparece en historial y en panel admin</td><td class="center">&#9744;</td></tr>
+<tr><td>4.5.2</td><td>Tipos de novedad</td><td>1. Verificar dropdown de tipo</td><td>Muestra 7 opciones: Dano mecanico, electrico, carroceria, llanta, frenos, luces, otro</td><td class="center">&#9744;</td></tr>
+<tr><td>4.5.3</td><td>Niveles de urgencia</td><td>1. Verificar opciones de urgencia</td><td>Muestra: baja, media, alta, critica</td><td class="center">&#9744;</td></tr>
+<tr><td>4.5.4</td><td>Ver historial de novedades</td><td>1. Verificar lista inferior</td><td>Muestra novedades reportadas con estado actual</td><td class="center">&#9744;</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="section-number">5.</span> FLUJOS COMPLETOS END-TO-END</h2>
+<!-- ============================================ -->
+
+<h3>5.1 Ciclo de vida completo de una solicitud</h3>
+<table>
+<tr><th>#</th><th>Paso</th><th>Acciones</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>5.1.1</td><td>Dependencia crea solicitud</td><td>Login infra@sopo.gov.co > Nueva Solicitud > Llenar datos > Confirmar</td><td>Solicitud creada en estado ENVIADA</td><td class="center">&#9744;</td></tr>
+<tr><td>5.1.2</td><td>Admin ve solicitud nueva</td><td>Login admin@sopo.gov.co > Dashboard</td><td>Contador "Nuevas hoy" incluye la solicitud</td><td class="center">&#9744;</td></tr>
+<tr><td>5.1.3</td><td>Admin programa servicio</td><td>Solicitudes > Abrir solicitud > Programar > Seleccionar vehiculo y conductor</td><td>Estado cambia a PROGRAMADA, asignacion visible</td><td class="center">&#9744;</td></tr>
+<tr><td>5.1.4</td><td>Conductor ve servicio</td><td>Login conductor1@sopo.gov.co > Dashboard</td><td>Servicio aparece en "Servicios hoy" (si es para hoy)</td><td class="center">&#9744;</td></tr>
+<tr><td>5.1.5</td><td>Conductor inicia servicio</td><td>Abrir servicio > Iniciar > Ingresar km_inicial</td><td>Estado EN_EJECUCION</td><td class="center">&#9744;</td></tr>
+<tr><td>5.1.6</td><td>Conductor finaliza servicio</td><td>Abrir servicio > Finalizar > Ingresar km_final</td><td>Estado FINALIZADA, KM vehiculo actualizado</td><td class="center">&#9744;</td></tr>
+<tr><td>5.1.7</td><td>Admin verifica finalizacion</td><td>Dashboard admin</td><td>Servicio aparece como FINALIZADA</td><td class="center">&#9744;</td></tr>
+<tr><td>5.1.8</td><td>Dependencia ve resultado</td><td>Login infra > Detalle solicitud</td><td>Estado FINALIZADA, historial completo visible</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>5.2 Flujo de cancelacion</h3>
+<table>
+<tr><th>#</th><th>Paso</th><th>Acciones</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>5.2.1</td><td>Dependencia crea solicitud</td><td>Crear solicitud normalmente</td><td>Estado ENVIADA</td><td class="center">&#9744;</td></tr>
+<tr><td>5.2.2</td><td>Dependencia cancela</td><td>Detalle > Cancelar > Motivo (10+ chars)</td><td>Estado CANCELADA</td><td class="center">&#9744;</td></tr>
+<tr><td>5.2.3</td><td>Admin ve cancelacion</td><td>Admin > Solicitudes > Filtrar CANCELADA</td><td>Solicitud visible con motivo</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>5.3 Flujo de rechazo</h3>
+<table>
+<tr><th>#</th><th>Paso</th><th>Acciones</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>5.3.1</td><td>Dependencia crea solicitud</td><td>Crear solicitud normalmente</td><td>Estado ENVIADA</td><td class="center">&#9744;</td></tr>
+<tr><td>5.3.2</td><td>Admin rechaza</td><td>Admin > Solicitud > Rechazar > Motivo</td><td>Estado RECHAZADA</td><td class="center">&#9744;</td></tr>
+<tr><td>5.3.3</td><td>Dependencia ve rechazo</td><td>Dependencia > Detalle</td><td>Estado RECHAZADA, motivo visible en historial</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>5.4 Flujo de transferencia</h3>
+<table>
+<tr><th>#</th><th>Paso</th><th>Acciones</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>5.4.1</td><td>Infra crea solicitud</td><td>Login infra > Crear solicitud</td><td>Estado ENVIADA</td><td class="center">&#9744;</td></tr>
+<tr><td>5.4.2</td><td>Infra transfiere a Gobierno</td><td>Detalle > Transferir > "Sec. Gobierno" > Motivo</td><td>Estado TRANSFERIDA</td><td class="center">&#9744;</td></tr>
+<tr><td>5.4.3</td><td>Gobierno ve solicitud</td><td>Login gobierno@sopo.gov.co > Mis Solicitudes</td><td>Solicitud transferida visible en su lista</td><td class="center">&#9744;</td></tr>
+</table>
+
+<h3>5.5 Flujo de novedad con mantenimiento</h3>
+<table>
+<tr><th>#</th><th>Paso</th><th>Acciones</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>5.5.1</td><td>Conductor reporta novedad critica</td><td>Login conductor > Novedades > Tipo: Dano mecanico, Urgencia: critica, Puede operar: no</td><td>Novedad creada</td><td class="center">&#9744;</td></tr>
+<tr><td>5.5.2</td><td>Admin ve novedad</td><td>Login admin > Novedades > Filtrar critica</td><td>Novedad visible con urgencia critica en rojo</td><td class="center">&#9744;</td></tr>
+<tr><td>5.5.3</td><td>Admin cambia estado</td><td>Cambiar estado a "en_mantenimiento"</td><td>Estado actualizado</td><td class="center">&#9744;</td></tr>
+<tr><td>5.5.4</td><td>Admin crea mantenimiento</td><td>Crear registro de mantenimiento para el vehiculo</td><td>Vehiculo pasa a estado "mantenimiento"</td><td class="center">&#9744;</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="section-number">6.</span> NAVEGACION Y UI</h2>
+<!-- ============================================ -->
+
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>6.1</td><td>Menu admin muestra 7 opciones</td><td>Login admin > Verificar navegacion</td><td>Dashboard, Solicitudes, Vehiculos, Conductores, Documentos, Novedades, Combustible</td><td class="center">&#9744;</td></tr>
+<tr><td>6.2</td><td>Menu dependencia muestra 3 opciones</td><td>Login dependencia > Verificar navegacion</td><td>Dashboard, Nueva Solicitud, Mis Solicitudes</td><td class="center">&#9744;</td></tr>
+<tr><td>6.3</td><td>Menu conductor muestra 4 opciones</td><td>Login conductor > Verificar navegacion</td><td>Dashboard, Mis Servicios, Combustible, Novedades</td><td class="center">&#9744;</td></tr>
+<tr><td>6.4</td><td>Link activo resaltado</td><td>Navegar entre secciones</td><td>Link actual tiene estilo diferente (color primario)</td><td class="center">&#9744;</td></tr>
+<tr><td>6.5</td><td>Nombre de usuario visible</td><td>Verificar header</td><td>Muestra nombre del usuario logueado</td><td class="center">&#9744;</td></tr>
+<tr><td>6.6</td><td>Badges de estado con colores</td><td>Verificar en listas de solicitudes</td><td>Cada estado tiene su color correspondiente</td><td class="center">&#9744;</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="section-number">7.</span> API HEALTH CHECK</h2>
+<!-- ============================================ -->
+
+<table>
+<tr><th>#</th><th>Caso de Prueba</th><th>Pasos</th><th>Resultado Esperado</th><th class="pass">Pasa</th></tr>
+<tr><td>7.1</td><td>Health endpoint</td><td>GET http://localhost:3000/api/health</td><td>Responde 200 OK</td><td class="center">&#9744;</td></tr>
+<tr><td>7.2</td><td>API responde</td><td>GET http://localhost:3000/api/catalogos/tipos-servicio (con auth)</td><td>Retorna lista de tipos de servicio</td><td class="center">&#9744;</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2>Resumen de Cobertura</h2>
+<!-- ============================================ -->
+
+<table class="summary-table">
+<tr><th>Modulo</th><th>Casos</th><th>Aspectos Criticos</th></tr>
+<tr><td>Autenticacion</td><td class="center">10</td><td>Login, roles, seguridad de sesion</td></tr>
+<tr><td>Portal Dependencia</td><td class="center">17</td><td>Crear solicitud, cancelar, transferir</td></tr>
+<tr><td>Portal Admin</td><td class="center">27</td><td>Programar servicio, CRUD flota, documentos</td></tr>
+<tr><td>Portal Conductor</td><td class="center">14</td><td>Iniciar/finalizar servicio, combustible, novedades</td></tr>
+<tr><td>Flujos E2E</td><td class="center">16</td><td>Ciclo completo, cancelacion, rechazo, transferencia</td></tr>
+<tr><td>UI / Navegacion</td><td class="center">6</td><td>Menus por rol, badges, accesibilidad</td></tr>
+<tr><td>API</td><td class="center">2</td><td>Health check</td></tr>
+<tr><td><strong>TOTAL</strong></td><td class="center"><strong>92</strong></td><td></td></tr>
+</table>
+
+<br>
+<p><strong>Instrucciones de Ejecucion:</strong></p>
+<ol>
+<li>Levantar el sistema: <code>docker compose up -d</code></li>
+<li>Ejecutar migraciones: <code>docker compose exec backend npx knex migrate:latest</code></li>
+<li>Ejecutar seeds: <code>docker compose exec backend npx knex seed:run</code></li>
+<li>Abrir <strong>http://localhost</strong> en el navegador</li>
+<li>Ejecutar los casos en orden, marcando las casillas al pasar</li>
+<li>Para flujos E2E, usar multiples pestanas de incognito para simular diferentes usuarios</li>
+</ol>
+
+</body>
+</html>

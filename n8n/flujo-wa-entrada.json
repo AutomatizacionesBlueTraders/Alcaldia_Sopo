@@ -1,5 +1,5 @@
 {
-  "name": "WhatsApp Entrada — Alcaldía Sopó",
+  "name": "WA Entrada — Alcaldía Sopó",
   "nodes": [
     {
       "parameters": {
@@ -8,8 +8,8 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "node-webhook",
-      "name": "Webhook Twilio",
+      "id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "name": "Webhook Twilio Entrada",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [240, 300]
@@ -22,20 +22,14 @@
         "contentType": "json",
         "body": {
           "values": [
-            {
-              "name": "from",
-              "value": "={{ $json.body.From }}"
-            },
-            {
-              "name": "body",
-              "value": "={{ $json.body.Body }}"
-            }
+            { "name": "from", "value": "={{ $json.body.From }}" },
+            { "name": "body", "value": "={{ $json.body.Body }}" }
           ]
         },
         "options": {}
       },
-      "id": "node-backend",
-      "name": "Enviar al Backend",
+      "id": "a1b2c3d4-0001-0001-0001-000000000002",
+      "name": "Procesar en Backend",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [460, 300]
@@ -43,31 +37,22 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://api.twilio.com/2010-04-01/Accounts/TU_ACCOUNT_SID/Messages.json",
+        "url": "=https://api.twilio.com/2010-04-01/Accounts/{{ $credentials.user }}/Messages.json",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpBasicAuth",
         "sendBody": true,
         "contentType": "form-urlencoded",
         "body": {
           "values": [
-            {
-              "name": "From",
-              "value": "whatsapp:+573156277828"
-            },
-            {
-              "name": "To",
-              "value": "={{ $json.to }}"
-            },
-            {
-              "name": "Body",
-              "value": "={{ $json.respuesta }}"
-            }
+            { "name": "From", "value": "whatsapp:+573156277828" },
+            { "name": "To", "value": "={{ $json.to }}" },
+            { "name": "Body", "value": "={{ $json.respuesta }}" }
           ]
         },
         "options": {}
       },
-      "id": "node-twilio-send",
-      "name": "Enviar WhatsApp",
+      "id": "a1b2c3d4-0001-0001-0001-000000000003",
+      "name": "Enviar Respuesta WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [680, 300]
@@ -78,50 +63,24 @@
         "responseBody": "={ \"status\": \"ok\" }",
         "options": {}
       },
-      "id": "node-response",
-      "name": "Respuesta HTTP",
+      "id": "a1b2c3d4-0001-0001-0001-000000000004",
+      "name": "Responder a Twilio",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [900, 300]
     }
   ],
   "connections": {
-    "Webhook Twilio": {
-      "main": [
-        [
-          {
-            "node": "Enviar al Backend",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Webhook Twilio Entrada": {
+      "main": [[{ "node": "Procesar en Backend", "type": "main", "index": 0 }]]
     },
-    "Enviar al Backend": {
-      "main": [
-        [
-          {
-            "node": "Enviar WhatsApp",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Procesar en Backend": {
+      "main": [[{ "node": "Enviar Respuesta WhatsApp", "type": "main", "index": 0 }]]
     },
-    "Enviar WhatsApp": {
-      "main": [
-        [
-          {
-            "node": "Respuesta HTTP",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Enviar Respuesta WhatsApp": {
+      "main": [[{ "node": "Responder a Twilio", "type": "main", "index": 0 }]]
     }
   },
-  "active": true,
-  "settings": {
-    "executionOrder": "v1"
-  }
+  "active": false,
+  "settings": { "executionOrder": "v1" }
 }

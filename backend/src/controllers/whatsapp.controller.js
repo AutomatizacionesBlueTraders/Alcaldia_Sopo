@@ -314,11 +314,10 @@ async function procesarMensaje(req, res) {
   res.json({ respuesta, to: from });
 }
 
-// ============ RECORDATORIOS (llamado por n8n cron) ============
+// ============ RECORDATORIOS (llamado por n8n cron — devuelve lista, n8n envía) ============
 
 async function recordatorios(req, res) {
   try {
-    const { enviarWhatsApp } = require('../utils/twilio');
     const manana = new Date();
     manana.setDate(manana.getDate() + 1);
     const fechaMañana = manana.toISOString().substring(0, 10);
@@ -336,25 +335,28 @@ async function recordatorios(req, res) {
         'conductores.nombre as conductor_nombre', 'conductores.telefono as conductor_telefono'
       );
 
+    const mensajes = [];
+
     for (const s of servicios) {
-      // Recordatorio a dependencia
+      const hora = s.hora_inicio?.substring(0, 5);
       if (s.contacto_telefono) {
-        await enviarWhatsApp(`+${s.contacto_telefono.replace(/\D/g, '')}`,
-          `🔔 *Recordatorio de servicio — Alcaldía de Sopó*\n\nMañana tienes un servicio de transporte programado:\n\n📍 *${s.origen} → ${s.destino}*\n⏰ Hora: *${s.hora_inicio?.substring(0, 5)}*\n🚗 Conductor: *${s.conductor_nombre}*\n\nSolicitud #${s.solicitud_id}`
-        );
+        mensajes.push({
+          to: `whatsapp:+${s.contacto_telefono.replace(/\D/g, '')}`,
+          body: `🔔 *Recordatorio — Alcaldía de Sopó*\n\nMañana tienes un servicio programado:\n\n📍 *${s.origen} → ${s.destino}*\n⏰ Hora: *${hora}*\n🚗 Conductor: *${s.conductor_nombre}*\n\nSolicitud #${s.solicitud_id}`
+        });
       }
-      // Recordatorio a conductor
       if (s.conductor_telefono) {
-        await enviarWhatsApp(`+57${s.conductor_telefono.replace(/\D/g, '')}`,
-          `🔔 *Recordatorio de servicio — Alcaldía de Sopó*\n\nMañana tienes un servicio asignado:\n\n📍 *${s.origen} → ${s.destino}*\n⏰ Hora: *${s.hora_inicio?.substring(0, 5)}*\n👤 Contacto: ${s.contacto_nombre}\n\nSolicitud #${s.solicitud_id}`
-        );
+        mensajes.push({
+          to: `whatsapp:+57${s.conductor_telefono.replace(/\D/g, '')}`,
+          body: `🔔 *Recordatorio — Alcaldía de Sopó*\n\nMañana tienes un servicio asignado:\n\n📍 *${s.origen} → ${s.destino}*\n⏰ Hora: *${hora}*\n👤 Contacto: ${s.contacto_nombre}\n\nSolicitud #${s.solicitud_id}`
+        });
       }
     }
 
-    res.json({ enviados: servicios.length });
+    res.json(mensajes); // n8n recibe el array y envía cada mensaje via Twilio
   } catch (err) {
     console.error('Error en recordatorios:', err);
-    res.status(500).json({ error: 'Error al enviar recordatorios' });
+    res.status(500).json({ error: 'Error al generar recordatorios' });
   }
 }
 

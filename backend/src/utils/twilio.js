@@ -1,33 +1,17 @@
-// Envía un mensaje WhatsApp via Twilio REST API (sin dependencia npm)
+// Envía un mensaje WhatsApp llamando al webhook de n8n (n8n se encarga de enviar via Twilio)
 async function enviarWhatsApp(to, body) {
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const token = process.env.TWILIO_AUTH_TOKEN;
-  const from = process.env.TWILIO_WHATSAPP_FROM; // ej: whatsapp:+573156277828
-
-  if (!sid || !token || !from) {
-    console.warn('[Twilio] Credenciales no configuradas, mensaje no enviado');
-    return;
-  }
-
+  const n8nUrl = process.env.N8N_INTERNAL_URL || 'http://n8n:5678';
   const toFormatted = to.startsWith('whatsapp:') ? to : `whatsapp:${to}`;
-  const auth = Buffer.from(`${sid}:${token}`).toString('base64');
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
-
-  const params = new URLSearchParams({ From: from, To: toFormatted, Body: body });
-
   try {
-    const resp = await fetch(url, {
+    const resp = await fetch(`${n8nUrl}/webhook/wa-salida`, {
       method: 'POST',
-      headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString()
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: toFormatted, body })
     });
-    if (!resp.ok) {
-      const err = await resp.json();
-      console.error('[Twilio] Error al enviar:', err);
-    }
+    if (!resp.ok) console.error('[n8n/WhatsApp] Error al enviar:', resp.status);
     return resp.ok;
   } catch (err) {
-    console.error('[Twilio] Error de red:', err.message);
+    console.error('[n8n/WhatsApp] Error de red:', err.message);
   }
 }
 
