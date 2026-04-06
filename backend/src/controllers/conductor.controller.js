@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { enviarWhatsApp } = require('../utils/twilio');
 
 async function getConductorId(userId) {
   const conductor = await db('conductores').where({ usuario_id: userId, activo: true }).first();
@@ -112,6 +113,28 @@ async function finalizarServicio(req, res) {
       usuario_id: req.user.id,
       notas: `KM final: ${km_final}`
     });
+
+    // Encuesta WhatsApp al contacto
+    const solicitudFinal = await db('solicitudes').where({ id: asignacion.solicitud_id }).first();
+    if (solicitudFinal?.contacto_telefono) {
+      const tel = `+${solicitudFinal.contacto_telefono.replace(/\D/g, '')}`;
+      await enviarWhatsApp(tel,
+        `✅ *Servicio finalizado — Alcaldía de Sopó*\n\n` +
+        `Tu servicio de transporte (Solicitud #${asignacion.solicitud_id}) ha sido completado.\n\n` +
+        `⭐ ¿Cómo calificarías el servicio?\n\nResponde con un número del *1 al 5*:\n` +
+        `1 - Muy malo  2 - Malo  3 - Regular  4 - Bueno  5 - Excelente`
+      );
+      // Marcar sesión para capturar encuesta
+      await db('whatsapp_sesiones')
+        .insert({
+          telefono: solicitudFinal.contacto_telefono.replace(/\D/g, ''),
+          estado: 'encuesta',
+          datos: JSON.stringify({ solicitud_id: asignacion.solicitud_id }),
+          updated_at: db.fn.now()
+        })
+        .onConflict('telefono')
+        .merge({ estado: 'encuesta', datos: JSON.stringify({ solicitud_id: asignacion.solicitud_id }), updated_at: db.fn.now() });
+    }
 
     res.json({ message: 'Servicio finalizado' });
   } catch (err) {

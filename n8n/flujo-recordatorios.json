@@ -1,0 +1,51 @@
+{
+  "name": "WhatsApp Recordatorios Diarios — Alcaldía Sopó",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
+      "id": "node-cron",
+      "name": "Cron 7AM diario",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:3000/api/whatsapp/recordatorios",
+        "options": {}
+      },
+      "id": "node-recordatorios",
+      "name": "Disparar Recordatorios",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [460, 300]
+    }
+  ],
+  "connections": {
+    "Cron 7AM diario": {
+      "main": [
+        [
+          {
+            "node": "Disparar Recordatorios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
