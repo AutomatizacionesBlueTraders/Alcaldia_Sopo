@@ -7,6 +7,7 @@ const adminRoutes = require('./routes/admin');
 const conductorRoutes = require('./routes/conductor');
 const catalogosRoutes = require('./routes/catalogos');
 const whatsappRoutes = require('./routes/whatsapp');
+const conocimientoRoutes = require('./routes/conocimiento');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -33,6 +34,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/conductor', conductorRoutes);
 app.use('/api/catalogos', catalogosRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/conocimiento', conocimientoRoutes);
 
 // Start
 app.listen(PORT, () => {

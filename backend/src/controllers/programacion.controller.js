@@ -1,5 +1,5 @@
 const db = require('../config/db');
-const { enviarWhatsApp } = require('../utils/twilio');
+const { notificarN8n } = require('../utils/twilio');
 
 async function vehiculosDisponibles(req, res) {
   try {
@@ -101,51 +101,24 @@ async function programar(req, res) {
       notas: `Vehículo: ${vehiculo_id}, Conductor: ${conductor_id}`
     });
 
-    // Notificaciones WhatsApp
+    // Notificaciones WhatsApp vía n8n
     const conductor = await db('conductores').where({ id: conductor_id }).first();
-    const fechaStr = fecha;
-    const horaStr = `${hora_inicio.substring(0, 5)} - ${hora_fin.substring(0, 5)}`;
     const vehiculo = await db('vehiculos').where({ id: vehiculo_id }).first();
 
-    // Al contacto de la solicitud
-    if (solicitud.contacto_telefono) {
-      const tel = `+${solicitud.contacto_telefono.replace(/\D/g, '')}`;
-      await enviarWhatsApp(tel,
-        `✅ *Servicio de transporte programado — Alcaldía de Sopó*\n\n` +
-        `Tu solicitud *#${solicitud.id}* ha sido programada:\n\n` +
-        `📅 Fecha: *${fechaStr}*\n` +
-        `⏰ Horario: *${horaStr}*\n` +
-        `📍 ${solicitud.origen} → ${solicitud.destino}\n` +
-        `🚗 Vehículo: *${vehiculo?.placa || vehiculo_id}*\n` +
-        `👤 Conductor: *${conductor?.nombre || conductor_id}* — ${conductor?.telefono || ''}\n\n` +
-        `¿Confirmas el servicio? Responde *SI* o *NO*.`
-      );
-      // Marcar sesión para capturar confirmación
-      await db('whatsapp_sesiones')
-        .insert({
-          telefono: solicitud.contacto_telefono.replace(/\D/g, ''),
-          estado: 'confirmar_servicio',
-          datos: JSON.stringify({ solicitud_id: solicitud.id }),
-          updated_at: db.fn.now()
-        })
-        .onConflict('telefono')
-        .merge({ estado: 'confirmar_servicio', datos: JSON.stringify({ solicitud_id: solicitud.id }), updated_at: db.fn.now() });
-    }
-
-    // Al conductor
-    if (conductor?.telefono) {
-      const telCond = `+57${conductor.telefono.replace(/\D/g, '')}`;
-      await enviarWhatsApp(telCond,
-        `🔔 *Nuevo servicio asignado — Alcaldía de Sopó*\n\n` +
-        `Tienes un servicio programado:\n\n` +
-        `📅 Fecha: *${fechaStr}*\n` +
-        `⏰ Horario: *${horaStr}*\n` +
-        `📍 *${solicitud.origen} → ${solicitud.destino}*\n` +
-        `👥 Pasajeros: ${solicitud.pasajeros}\n` +
-        `👤 Contacto: ${solicitud.contacto_nombre} — ${solicitud.contacto_telefono}\n\n` +
-        `Solicitud #${solicitud.id}`
-      );
-    }
+    await notificarN8n('programacion_servicio', {
+      solicitud_id: solicitud.id,
+      contacto_telefono: solicitud.contacto_telefono,
+      contacto_nombre: solicitud.contacto_nombre,
+      conductor_nombre: conductor?.nombre,
+      conductor_telefono: conductor?.telefono,
+      vehiculo_placa: vehiculo?.placa,
+      fecha,
+      hora_inicio: hora_inicio.substring(0, 5),
+      hora_fin: hora_fin.substring(0, 5),
+      origen: solicitud.origen,
+      destino: solicitud.destino,
+      pasajeros: solicitud.pasajeros
+    });
 
     res.status(201).json(asignacion);
   } catch (err) {

@@ -1,18 +1,17 @@
-// Envía un mensaje WhatsApp llamando al webhook de n8n (n8n se encarga de enviar via Twilio)
-async function enviarWhatsApp(to, body) {
-  const n8nUrl = process.env.N8N_INTERNAL_URL || 'http://n8n:5678';
-  const toFormatted = to.startsWith('whatsapp:') ? to : `whatsapp:${to}`;
+// Envía notificaciones a n8n con accion + datos — n8n formatea y envía vía Twilio
+const n8nUrl = process.env.N8N_INTERNAL_URL || 'http://n8n:5678';
+
+async function notificarN8n(accion, datos) {
   try {
     const resp = await fetch(`${n8nUrl}/webhook/wa-salida`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to: toFormatted, body })
+      body: JSON.stringify({ accion, ...datos })
     });
-    if (!resp.ok) console.error('[n8n/WhatsApp] Error al enviar:', resp.status);
-    return resp.ok;
+    if (!resp.ok) console.error('[n8n] Error al notificar:', resp.status);
   } catch (err) {
-    console.error('[n8n/WhatsApp] Error de red:', err.message);
+    console.error('[n8n] Error de red:', err.message);
   }
 }
 
-module.exports = { enviarWhatsApp };
+module.exports = { notificarN8n };

@@ -1,8 +1,9 @@
 const db = require('../config/db');
+const { notificarN8n } = require('../utils/twilio');
 
-// ============ SESIÓN ============
+// ─── HELPERS ────────────────────────────────────────────────────────────────
 
-async function getSesion(telefono) {
+async function getOrCreateSesion(telefono) {
   let sesion = await db('whatsapp_sesiones').where({ telefono }).first();
   if (!sesion) {
     [sesion] = await db('whatsapp_sesiones')
@@ -12,309 +13,345 @@ async function getSesion(telefono) {
   return sesion;
 }
 
-async function setSesion(telefono, estado, datos = {}) {
-  await db('whatsapp_sesiones')
-    .where({ telefono })
-    .update({ estado, datos: JSON.stringify(datos), updated_at: db.fn.now() });
+function parseDatos(raw) {
+  if (!raw) return {};
+  if (typeof raw === 'object') return raw;
+  try { return JSON.parse(raw); } catch { return {}; }
 }
 
-// ============ MENU PRINCIPAL ============
+// ─── CONTEXTO (usuario + sesión en una sola llamada) ────────────────────────
 
-const MENU = `Hola! Soy el asistente de *Transporte Alcaldía de Sopó* 🚗
+async function contexto(req, res) {
+  try {
+    const { telefono } = req.query;
+    if (!telefono) return res.status(400).json({ error: 'telefono requerido' });
 
-¿Qué deseas hacer?
+    const sesion = await getOrCreateSesion(telefono);
+    const sesionBase = { sesion_estado: sesion.estado, sesion_datos: parseDatos(sesion.datos) };
 
-1️⃣ Solicitar un servicio de transporte
-2️⃣ Consultar mis solicitudes
-3️⃣ Cancelar una solicitud
-
-Responde con el número de tu opción.`;
-
-// ============ BOT PRINCIPAL ============
-
-async function procesarMensaje(req, res) {
-  const { from, body: rawBody } = req.body;
-  if (!from || !rawBody) return res.status(400).json({ error: 'Faltan from o body' });
-
-  const telefono = from.replace('whatsapp:', '').trim();
-  const msg = rawBody.trim().toLowerCase();
-
-  const sesion = await getSesion(telefono);
-  const estado = sesion.estado;
-  const datos = typeof sesion.datos === 'string' ? JSON.parse(sesion.datos) : sesion.datos;
-
-  let respuesta = '';
-
-  // ──── ENCUESTA (estado especial, llega desde notificación post-servicio) ────
-  if (estado === 'encuesta') {
-    const num = parseInt(msg);
-    if (num >= 1 && num <= 5) {
-      if (datos.solicitud_id) {
-        await db('encuestas').insert({
-          solicitud_id: datos.solicitud_id,
-          calificacion: num,
-          comentario: null
-        });
-      }
-      await setSesion(telefono, 'idle', {});
-      respuesta = `✅ ¡Gracias por tu calificación de *${num} estrella${num > 1 ? 's' : ''}*! Tu opinión nos ayuda a mejorar el servicio. 🙏`;
-    } else {
-      respuesta = 'Por favor responde con un número del *1 al 5* para calificar el servicio.';
+    // ¿Es conductor?
+    const conductor = await db('conductores').where({ telefono, activo: true }).first();
+    if (conductor) {
+      return res.json({ tipo: 'conductor', nombre: conductor.nombre, conductor_id: conductor.id, ...sesionBase });
     }
-    return res.json({ respuesta, to: from });
+
+    // ¿Es usuario de dependencia?
+    const usuario = await db('usuarios')
+      .join('dependencias', 'usuarios.dependencia_id', 'dependencias.id')
+      .where({ 'usuarios.telefono': telefono, 'usuarios.activo': true })
+      .select('usuarios.id', 'usuarios.nombre', 'usuarios.dependencia_id', 'dependencias.nombre as dependencia_nombre')
+      .first();
+    if (usuario) {
+      return res.json({
+        tipo: 'dependencia',
+        nombre: usuario.nombre,
+        usuario_id: usuario.id,
+        dependencia_id: usuario.dependencia_id,
+        dependencia_nombre: usuario.dependencia_nombre,
+        ...sesionBase
+      });
+    }
+
+    res.json({ tipo: 'desconocido', ...sesionBase });
+  } catch (err) {
+    console.error('contexto WA:', err);
+    res.status(500).json({ error: 'Error al obtener contexto' });
   }
-
-  // ──── CONFIRMACIÓN DE SERVICIO (llega desde notificación de programación) ────
-  if (estado === 'confirmar_servicio') {
-    const si = ['si', 'sí', 's', 'yes', '1'].includes(msg);
-    const no = ['no', 'n', '2'].includes(msg);
-
-    if (si || no) {
-      const nuevoEstado = si ? 'CONFIRMADA' : 'NO_CONFIRMADA';
-      if (datos.solicitud_id) {
-        const solicitud = await db('solicitudes').where({ id: datos.solicitud_id }).first();
-        if (solicitud) {
-          await db('solicitudes').where({ id: datos.solicitud_id }).update({ estado: nuevoEstado, updated_at: db.fn.now() });
-          await db('historial_solicitudes').insert({
-            solicitud_id: datos.solicitud_id,
-            estado_anterior: solicitud.estado,
-            estado_nuevo: nuevoEstado,
-            notas: `Confirmación vía WhatsApp: ${si ? 'CONFIRMADO' : 'NO CONFIRMADO'}`
-          });
-        }
-      }
-      await setSesion(telefono, 'idle', {});
-      respuesta = si
-        ? '✅ *Servicio confirmado*. ¡Gracias! Te avisaremos cuando el conductor salga.'
-        : '❌ *Servicio no confirmado*. Hemos registrado tu respuesta. La administradora tomará las medidas necesarias.';
-    } else {
-      respuesta = 'Por favor responde *SI* para confirmar o *NO* para rechazar el servicio.';
-    }
-    return res.json({ respuesta, to: from });
-  }
-
-  // ──── FLUJO NUEVA SOLICITUD ────
-  if (estado === 'sol_fecha') {
-    const fecha = parseFecha(msg);
-    if (!fecha) {
-      respuesta = '❌ Formato de fecha no válido. Por favor ingresa la fecha en formato *DD/MM/AAAA* (ej: 25/04/2026).';
-    } else if (new Date(fecha) < new Date()) {
-      respuesta = '❌ La fecha debe ser futura. Intenta de nuevo (DD/MM/AAAA).';
-    } else {
-      await setSesion(telefono, 'sol_hora', { ...datos, fecha });
-      respuesta = `📅 Fecha: *${msg.toUpperCase()}*\n\n⏰ ¿A qué hora necesitas el servicio? (formato HH:MM, ej: 08:30)`;
-    }
-    return res.json({ respuesta, to: from });
-  }
-
-  if (estado === 'sol_hora') {
-    const hora = parseHora(msg);
-    if (!hora) {
-      respuesta = '❌ Formato de hora no válido. Usa HH:MM (ej: 08:30).';
-    } else {
-      await setSesion(telefono, 'sol_origen', { ...datos, hora_inicio: hora });
-      respuesta = `⏰ Hora: *${hora}*\n\n📍 ¿Desde dónde salen? (escribe el lugar de origen)`;
-    }
-    return res.json({ respuesta, to: from });
-  }
-
-  if (estado === 'sol_origen') {
-    if (msg.length < 3) {
-      respuesta = 'Por favor escribe el lugar de origen con más detalle.';
-    } else {
-      await setSesion(telefono, 'sol_destino', { ...datos, origen: rawBody.trim() });
-      respuesta = `📍 Origen: *${rawBody.trim()}*\n\n🏁 ¿A dónde van? (lugar de destino)`;
-    }
-    return res.json({ respuesta, to: from });
-  }
-
-  if (estado === 'sol_destino') {
-    if (msg.length < 3) {
-      respuesta = 'Por favor escribe el destino con más detalle.';
-    } else {
-      await setSesion(telefono, 'sol_pasajeros', { ...datos, destino: rawBody.trim() });
-      respuesta = `🏁 Destino: *${rawBody.trim()}*\n\n👥 ¿Cuántos pasajeros van?`;
-    }
-    return res.json({ respuesta, to: from });
-  }
-
-  if (estado === 'sol_pasajeros') {
-    const n = parseInt(msg);
-    if (!n || n < 1 || n > 50) {
-      respuesta = '❌ Ingresa un número válido de pasajeros (entre 1 y 50).';
-    } else {
-      // Obtener lista de dependencias
-      const deps = await db('dependencias').where({ activo: true }).orderBy('nombre');
-      const lista = deps.map((d, i) => `${i + 1}️⃣ ${d.nombre}`).join('\n');
-      await setSesion(telefono, 'sol_dependencia', { ...datos, pasajeros: n, dependencias: deps.map(d => ({ id: d.id, nombre: d.nombre })) });
-      respuesta = `👥 Pasajeros: *${n}*\n\n🏢 ¿A qué dependencia perteneces?\n\n${lista}`;
-    }
-    return res.json({ respuesta, to: from });
-  }
-
-  if (estado === 'sol_dependencia') {
-    const idx = parseInt(msg) - 1;
-    const deps = datos.dependencias || [];
-    if (idx < 0 || idx >= deps.length || isNaN(idx)) {
-      const lista = deps.map((d, i) => `${i + 1}️⃣ ${d.nombre}`).join('\n');
-      respuesta = `❌ Opción no válida. Elige un número:\n\n${lista}`;
-    } else {
-      const dep = deps[idx];
-      await setSesion(telefono, 'sol_contacto_nombre', { ...datos, dependencia_id: dep.id, dependencia_nombre: dep.nombre, dependencias: undefined });
-      respuesta = `🏢 Dependencia: *${dep.nombre}*\n\n👤 ¿Nombre completo del contacto responsable?`;
-    }
-    return res.json({ respuesta, to: from });
-  }
-
-  if (estado === 'sol_contacto_nombre') {
-    if (msg.length < 3) {
-      respuesta = 'Por favor escribe el nombre completo del contacto.';
-    } else {
-      await setSesion(telefono, 'sol_contacto_tel', { ...datos, contacto_nombre: rawBody.trim() });
-      respuesta = `👤 Contacto: *${rawBody.trim()}*\n\n📞 ¿Teléfono del contacto? (ej: 3001234567)`;
-    }
-    return res.json({ respuesta, to: from });
-  }
-
-  if (estado === 'sol_contacto_tel') {
-    const tel = msg.replace(/\D/g, '');
-    if (tel.length < 7) {
-      respuesta = '❌ Teléfono no válido. Ingresa el número sin espacios ni guiones.';
-    } else {
-      const d = { ...datos, contacto_telefono: tel };
-      await setSesion(telefono, 'sol_confirmar', d);
-      respuesta = resumenSolicitud(d);
-    }
-    return res.json({ respuesta, to: from });
-  }
-
-  if (estado === 'sol_confirmar') {
-    const si = ['si', 'sí', 's', 'yes'].includes(msg);
-    const no = ['no', 'n'].includes(msg);
-
-    if (si) {
-      try {
-        // Buscar usuario por dependencia (cualquier usuario activo de esa dependencia)
-        const usuario = await db('usuarios').where({ dependencia_id: datos.dependencia_id }).first();
-        const fechaISO = parseFecha(datos.fecha); // YYYY-MM-DD
-
-        const [solicitud] = await db('solicitudes').insert({
-          dependencia_id: datos.dependencia_id,
-          usuario_id: usuario?.id || null,
-          fecha_servicio: fechaISO,
-          hora_inicio: datos.hora_inicio,
-          origen: datos.origen,
-          destino: datos.destino,
-          pasajeros: datos.pasajeros,
-          contacto_nombre: datos.contacto_nombre,
-          contacto_telefono: datos.contacto_telefono,
-          estado: 'ENVIADA',
-          canal: 'whatsapp'
-        }).returning('*');
-
-        await db('historial_solicitudes').insert({
-          solicitud_id: solicitud.id,
-          estado_anterior: null,
-          estado_nuevo: 'ENVIADA',
-          notas: `Solicitud creada vía WhatsApp desde ${telefono}`
-        });
-
-        await setSesion(telefono, 'idle', {});
-        respuesta = `✅ *Solicitud #${solicitud.id} creada exitosamente*\n\nLa administradora revisará tu solicitud y te notificaremos por este medio cuando sea programada.\n\n¿Necesitas algo más? Escribe *menú* para volver al inicio.`;
-      } catch (err) {
-        console.error('Error creando solicitud WhatsApp:', err);
-        await setSesion(telefono, 'idle', {});
-        respuesta = '❌ Ocurrió un error al crear la solicitud. Por favor intenta de nuevo más tarde.';
-      }
-    } else if (no) {
-      await setSesion(telefono, 'idle', {});
-      respuesta = '❌ Solicitud cancelada. Escribe *menú* si deseas comenzar de nuevo.';
-    } else {
-      respuesta = 'Por favor responde *SI* para confirmar o *NO* para cancelar la solicitud.';
-    }
-    return res.json({ respuesta, to: from });
-  }
-
-  // ──── CANCELAR SOLICITUD ────
-  if (estado === 'cancelar_id') {
-    const solicitudId = parseInt(msg);
-    if (!solicitudId) {
-      respuesta = '❌ Por favor ingresa el *número* de tu solicitud (ej: 12).';
-    } else {
-      const solicitud = await db('solicitudes').where({ id: solicitudId }).first();
-      if (!solicitud) {
-        respuesta = `❌ No encontré la solicitud #${solicitudId}. Verifica el número e intenta de nuevo.`;
-      } else if (['CANCELADA', 'RECHAZADA', 'FINALIZADA'].includes(solicitud.estado)) {
-        respuesta = `❌ La solicitud #${solicitudId} está en estado *${solicitud.estado}* y no se puede cancelar.`;
-        await setSesion(telefono, 'idle', {});
-      } else if (['EN_EJECUCION'].includes(solicitud.estado)) {
-        respuesta = `❌ La solicitud #${solicitudId} ya está *en ejecución* y no se puede cancelar desde aquí. Comunícate con la administradora.`;
-        await setSesion(telefono, 'idle', {});
-      } else {
-        await db('solicitudes').where({ id: solicitudId }).update({ estado: 'CANCELADA', updated_at: db.fn.now() });
-        await db('historial_solicitudes').insert({
-          solicitud_id: solicitudId,
-          estado_anterior: solicitud.estado,
-          estado_nuevo: 'CANCELADA',
-          notas: `Cancelada por usuario vía WhatsApp (${telefono})`
-        });
-        // Liberar calendarios si había asignación
-        const asig = await db('asignaciones').where({ solicitud_id: solicitudId }).first();
-        if (asig) {
-          await db('calendario_vehiculos').where({ solicitud_id: solicitudId }).update({ estado: 'cancelado' });
-          await db('calendario_conductores').where({ solicitud_id: solicitudId }).update({ estado: 'cancelado' });
-        }
-        await setSesion(telefono, 'idle', {});
-        respuesta = `✅ Solicitud #${solicitudId} cancelada exitosamente.`;
-      }
-    }
-    return res.json({ respuesta, to: from });
-  }
-
-  // ──── MENÚ / ESTADO IDLE ────
-  // Palabras clave que siempre vuelven al menú
-  if (['menu', 'menú', 'hola', 'inicio', 'start', 'help', 'ayuda', '0'].includes(msg) || estado === 'idle') {
-    if (msg === '1' && estado === 'idle') {
-      await setSesion(telefono, 'sol_fecha', {});
-      respuesta = '📅 ¿Para qué fecha necesitas el servicio? Escribe en formato *DD/MM/AAAA* (ej: 25/04/2026)';
-      return res.json({ respuesta, to: from });
-    }
-    if (msg === '2' && estado === 'idle') {
-      const solicitudesActivas = await db('solicitudes')
-        .where({ canal: 'whatsapp' })
-        .whereNotIn('estado', ['CANCELADA', 'RECHAZADA', 'FINALIZADA'])
-        .orderBy('created_at', 'desc')
-        .limit(5);
-
-      if (solicitudesActivas.length === 0) {
-        respuesta = 'No tienes solicitudes activas registradas por WhatsApp.\n\nEscribe *1* para crear una nueva.';
-      } else {
-        const lista = solicitudesActivas.map(s =>
-          `• *#${s.id}* — ${s.fecha_servicio?.toString().substring(0, 10)} | ${s.origen} → ${s.destino} | Estado: *${s.estado}*`
-        ).join('\n');
-        respuesta = `📋 *Tus solicitudes activas:*\n\n${lista}\n\nEscribe *menú* para volver al inicio.`;
-      }
-      return res.json({ respuesta, to: from });
-    }
-    if (msg === '3' && estado === 'idle') {
-      await setSesion(telefono, 'cancelar_id', {});
-      respuesta = '🚫 ¿Cuál es el número de la solicitud que deseas cancelar? (ej: 12)';
-      return res.json({ respuesta, to: from });
-    }
-
-    // Mostrar menú
-    await setSesion(telefono, 'idle', {});
-    respuesta = MENU;
-    return res.json({ respuesta, to: from });
-  }
-
-  // Fallback
-  await setSesion(telefono, 'idle', {});
-  respuesta = MENU;
-  res.json({ respuesta, to: from });
 }
 
-// ============ RECORDATORIOS (llamado por n8n cron — devuelve lista, n8n envía) ============
+// ─── SESIÓN ──────────────────────────────────────────────────────────────────
+
+async function getSesion(req, res) {
+  try {
+    const { telefono } = req.query;
+    if (!telefono) return res.status(400).json({ error: 'telefono requerido' });
+    const sesion = await getOrCreateSesion(telefono);
+    res.json({ estado: sesion.estado, datos: parseDatos(sesion.datos) });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener sesión' });
+  }
+}
+
+async function setSesion(req, res) {
+  try {
+    const { telefono, estado, datos } = req.body;
+    if (!telefono || !estado) return res.status(400).json({ error: 'telefono y estado requeridos' });
+    await db('whatsapp_sesiones')
+      .where({ telefono })
+      .update({ estado, datos: JSON.stringify(datos || {}), updated_at: db.fn.now() });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al actualizar sesión' });
+  }
+}
+
+// ─── CATÁLOGOS ───────────────────────────────────────────────────────────────
+
+async function getDependencias(req, res) {
+  try {
+    const deps = await db('dependencias').where({ activo: true }).orderBy('nombre')
+      .select('id', 'nombre');
+    res.json(deps);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al listar dependencias' });
+  }
+}
+
+// ─── SOLICITUDES ─────────────────────────────────────────────────────────────
+
+async function crearSolicitud(req, res) {
+  try {
+    const {
+      telefono, fecha_servicio, hora_inicio, origen, destino,
+      pasajeros, dependencia_id, contacto_nombre, contacto_telefono
+    } = req.body;
+
+    if (!fecha_servicio || !hora_inicio || !origen || !destino || !pasajeros || !dependencia_id || !contacto_nombre) {
+      return res.status(400).json({ ok: false, mensaje: 'Faltan campos obligatorios para crear la solicitud' });
+    }
+
+    const usuario = await db('usuarios').where({ dependencia_id, activo: true }).first();
+
+    const [solicitud] = await db('solicitudes').insert({
+      dependencia_id,
+      usuario_id: usuario?.id || null,
+      fecha_servicio,
+      hora_inicio,
+      origen,
+      destino,
+      pasajeros: parseInt(pasajeros),
+      contacto_nombre,
+      contacto_telefono: contacto_telefono || telefono,
+      estado: 'ENVIADA',
+      canal: 'whatsapp'
+    }).returning('*');
+
+    await db('historial_solicitudes').insert({
+      solicitud_id: solicitud.id,
+      estado_nuevo: 'ENVIADA',
+      notas: `Creada vía WhatsApp (${telefono})`
+    });
+
+    if (telefono) {
+      await db('whatsapp_sesiones').where({ telefono })
+        .update({ estado: 'idle', datos: JSON.stringify({}), updated_at: db.fn.now() });
+    }
+
+    res.json({ ok: true, solicitud_id: solicitud.id, mensaje: `✅ Solicitud #${solicitud.id} creada. La administradora la revisará y te notificará por aquí cuando sea programada.` });
+  } catch (err) {
+    console.error('crearSolicitud WA:', err);
+    res.status(500).json({ ok: false, mensaje: 'Error al crear la solicitud. Intenta de nuevo.' });
+  }
+}
+
+async function misSolicitudes(req, res) {
+  try {
+    const { telefono } = req.query;
+    if (!telefono) return res.status(400).json({ error: 'telefono requerido' });
+
+    const solicitudes = await db('solicitudes')
+      .where({ canal: 'whatsapp', contacto_telefono: telefono })
+      .whereNotIn('estado', ['CANCELADA', 'RECHAZADA', 'FINALIZADA'])
+      .orderBy('created_at', 'desc')
+      .limit(5)
+      .select('id', 'fecha_servicio', 'origen', 'destino', 'estado', 'hora_inicio');
+
+    res.json(solicitudes);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al consultar solicitudes' });
+  }
+}
+
+async function cancelarSolicitud(req, res) {
+  try {
+    const { solicitud_id, telefono } = req.body;
+    if (!solicitud_id) return res.status(400).json({ ok: false, mensaje: 'solicitud_id requerido' });
+
+    const solicitud = await db('solicitudes').where({ id: solicitud_id }).first();
+    if (!solicitud) return res.json({ ok: false, mensaje: `❌ No encontré la solicitud #${solicitud_id}. Verifica el número.` });
+
+    if (['CANCELADA', 'RECHAZADA', 'FINALIZADA', 'EN_EJECUCION'].includes(solicitud.estado)) {
+      return res.json({ ok: false, mensaje: `❌ La solicitud #${solicitud_id} está en estado *${solicitud.estado}* y no puede cancelarse.` });
+    }
+
+    await db('solicitudes').where({ id: solicitud_id }).update({ estado: 'CANCELADA', updated_at: db.fn.now() });
+    await db('historial_solicitudes').insert({
+      solicitud_id,
+      estado_anterior: solicitud.estado,
+      estado_nuevo: 'CANCELADA',
+      notas: `Cancelada vía WhatsApp (${telefono || 'desconocido'})`
+    });
+
+    const asig = await db('asignaciones').where({ solicitud_id }).first();
+    if (asig) {
+      await db('calendario_vehiculos').where({ solicitud_id }).update({ estado: 'cancelado' });
+      await db('calendario_conductores').where({ solicitud_id }).update({ estado: 'cancelado' });
+    }
+
+    if (telefono) {
+      await db('whatsapp_sesiones').where({ telefono })
+        .update({ estado: 'idle', datos: JSON.stringify({}), updated_at: db.fn.now() });
+    }
+
+    res.json({ ok: true, mensaje: `✅ Solicitud #${solicitud_id} cancelada exitosamente.` });
+  } catch (err) {
+    res.status(500).json({ ok: false, mensaje: 'Error al cancelar. Intenta de nuevo.' });
+  }
+}
+
+async function confirmarServicio(req, res) {
+  try {
+    const { solicitud_id, telefono, confirmado } = req.body;
+
+    const solicitud = await db('solicitudes').where({ id: solicitud_id }).first();
+    if (!solicitud) return res.status(404).json({ error: 'Solicitud no encontrada' });
+
+    const nuevoEstado = confirmado ? 'CONFIRMADA' : 'NO_CONFIRMADA';
+    await db('solicitudes').where({ id: solicitud_id }).update({ estado: nuevoEstado, updated_at: db.fn.now() });
+    await db('historial_solicitudes').insert({
+      solicitud_id,
+      estado_anterior: solicitud.estado,
+      estado_nuevo: nuevoEstado,
+      notas: `Confirmación vía WhatsApp: ${confirmado ? 'CONFIRMADO' : 'NO CONFIRMADO'}`
+    });
+
+    if (telefono) {
+      await db('whatsapp_sesiones').where({ telefono })
+        .update({ estado: 'idle', datos: JSON.stringify({}), updated_at: db.fn.now() });
+    }
+
+    res.json({ ok: true, confirmado });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al confirmar' });
+  }
+}
+
+async function guardarEncuesta(req, res) {
+  try {
+    const { solicitud_id, calificacion, telefono } = req.body;
+    if (!solicitud_id || !calificacion) {
+      return res.status(400).json({ error: 'solicitud_id y calificacion requeridos' });
+    }
+
+    await db('encuestas').insert({ solicitud_id, calificacion: parseInt(calificacion), comentario: null });
+
+    if (telefono) {
+      await db('whatsapp_sesiones').where({ telefono })
+        .update({ estado: 'idle', datos: JSON.stringify({}), updated_at: db.fn.now() });
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al guardar encuesta' });
+  }
+}
+
+// ─── CONDUCTOR (por teléfono, sin JWT) ──────────────────────────────────────
+
+async function serviciosConductorWa(req, res) {
+  try {
+    const { telefono } = req.query;
+    const conductor = await db('conductores').where({ telefono, activo: true }).first();
+    if (!conductor) return res.status(404).json({ error: 'Conductor no encontrado' });
+
+    const hoy = new Date().toISOString().split('T')[0];
+    const servicios = await db('asignaciones')
+      .where({ 'asignaciones.conductor_id': conductor.id })
+      .where('asignaciones.fecha', '>=', hoy)
+      .join('solicitudes', 'asignaciones.solicitud_id', 'solicitudes.id')
+      .join('vehiculos', 'asignaciones.vehiculo_id', 'vehiculos.id')
+      .whereNotIn('solicitudes.estado', ['CANCELADA', 'RECHAZADA'])
+      .select(
+        'asignaciones.id', 'asignaciones.fecha', 'asignaciones.hora_inicio', 'asignaciones.hora_fin',
+        'asignaciones.km_inicial',
+        'solicitudes.id as solicitud_id', 'solicitudes.origen', 'solicitudes.destino',
+        'solicitudes.estado as estado_solicitud', 'solicitudes.pasajeros',
+        'solicitudes.contacto_nombre', 'solicitudes.contacto_telefono',
+        'vehiculos.placa', 'vehiculos.marca'
+      )
+      .orderBy('asignaciones.fecha')
+      .orderBy('asignaciones.hora_inicio')
+      .limit(10);
+
+    res.json({ conductor_id: conductor.id, nombre: conductor.nombre, servicios });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener servicios' });
+  }
+}
+
+async function iniciarServicioWa(req, res) {
+  try {
+    const { asignacion_id, km_inicial, telefono } = req.body;
+    const conductor = await db('conductores').where({ telefono, activo: true }).first();
+    if (!conductor) return res.status(404).json({ ok: false, mensaje: 'Conductor no encontrado' });
+
+    const asignacion = await db('asignaciones')
+      .where({ id: asignacion_id, conductor_id: conductor.id }).first();
+    if (!asignacion) return res.json({ ok: false, mensaje: `❌ Servicio #${asignacion_id} no encontrado o no te pertenece.` });
+
+    const solicitud = await db('solicitudes').where({ id: asignacion.solicitud_id }).first();
+    if (!['PROGRAMADA', 'CONFIRMADA'].includes(solicitud.estado)) {
+      return res.json({ ok: false, mensaje: `❌ No puedes iniciar un servicio en estado *${solicitud.estado}*.` });
+    }
+
+    await db('asignaciones').where({ id: asignacion_id }).update({ km_inicial: parseInt(km_inicial) });
+    await db('solicitudes').where({ id: asignacion.solicitud_id })
+      .update({ estado: 'EN_EJECUCION', updated_at: db.fn.now() });
+    await db('historial_solicitudes').insert({
+      solicitud_id: asignacion.solicitud_id,
+      estado_anterior: solicitud.estado,
+      estado_nuevo: 'EN_EJECUCION',
+      notas: `Iniciado vía WhatsApp. KM inicial: ${km_inicial}`
+    });
+
+    res.json({ ok: true, mensaje: `✅ Servicio iniciado. KM inicial registrado: *${km_inicial}*` });
+  } catch (err) {
+    res.status(500).json({ ok: false, mensaje: 'Error al iniciar el servicio.' });
+  }
+}
+
+async function finalizarServicioWa(req, res) {
+  try {
+    const { asignacion_id, km_final, telefono } = req.body;
+    const conductor = await db('conductores').where({ telefono, activo: true }).first();
+    if (!conductor) return res.status(404).json({ ok: false, mensaje: 'Conductor no encontrado' });
+
+    const asignacion = await db('asignaciones')
+      .where({ id: asignacion_id, conductor_id: conductor.id }).first();
+    if (!asignacion) return res.json({ ok: false, mensaje: `❌ Servicio #${asignacion_id} no encontrado.` });
+
+    if (parseInt(km_final) <= (asignacion.km_inicial || 0)) {
+      return res.json({ ok: false, mensaje: `❌ El KM final (${km_final}) debe ser mayor al KM inicial (${asignacion.km_inicial}).` });
+    }
+
+    await db('asignaciones').where({ id: asignacion_id }).update({ km_final: parseInt(km_final) });
+    await db('solicitudes').where({ id: asignacion.solicitud_id })
+      .update({ estado: 'FINALIZADA', updated_at: db.fn.now() });
+    await db('vehiculos').where({ id: asignacion.vehiculo_id })
+      .update({ km_actual: parseInt(km_final) });
+    await db('historial_solicitudes').insert({
+      solicitud_id: asignacion.solicitud_id,
+      estado_anterior: 'EN_EJECUCION',
+      estado_nuevo: 'FINALIZADA',
+      notas: `Finalizado vía WhatsApp. KM final: ${km_final}`
+    });
+
+    const solicitudFinal = await db('solicitudes').where({ id: asignacion.solicitud_id }).first();
+    if (solicitudFinal?.contacto_telefono) {
+      await notificarN8n('fin_servicio', {
+        solicitud_id: asignacion.solicitud_id,
+        contacto_telefono: solicitudFinal.contacto_telefono,
+        contacto_nombre: solicitudFinal.contacto_nombre
+      });
+    }
+
+    res.json({ ok: true, mensaje: `✅ Servicio finalizado. KM: ${asignacion.km_inicial} → ${km_final}` });
+  } catch (err) {
+    res.status(500).json({ ok: false, mensaje: 'Error al finalizar el servicio.' });
+  }
+}
+
+// ─── RECORDATORIOS (llamado por n8n cron) ────────────────────────────────────
 
 async function recordatorios(req, res) {
   try {
@@ -336,12 +373,11 @@ async function recordatorios(req, res) {
       );
 
     const mensajes = [];
-
     for (const s of servicios) {
       const hora = s.hora_inicio?.substring(0, 5);
       if (s.contacto_telefono) {
         mensajes.push({
-          to: `whatsapp:+${s.contacto_telefono.replace(/\D/g, '')}`,
+          to: `whatsapp:+57${s.contacto_telefono.replace(/\D/g, '')}`,
           body: `🔔 *Recordatorio — Alcaldía de Sopó*\n\nMañana tienes un servicio programado:\n\n📍 *${s.origen} → ${s.destino}*\n⏰ Hora: *${hora}*\n🚗 Conductor: *${s.conductor_nombre}*\n\nSolicitud #${s.solicitud_id}`
         });
       }
@@ -353,41 +389,17 @@ async function recordatorios(req, res) {
       }
     }
 
-    res.json(mensajes); // n8n recibe el array y envía cada mensaje via Twilio
+    res.json(mensajes);
   } catch (err) {
-    console.error('Error en recordatorios:', err);
+    console.error('Error recordatorios:', err);
     res.status(500).json({ error: 'Error al generar recordatorios' });
   }
 }
 
-// ============ HELPERS ============
-
-function parseFecha(str) {
-  // Acepta DD/MM/AAAA o YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
-  const m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-  if (!m) return null;
-  return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
-}
-
-function parseHora(str) {
-  const m = str.match(/^(\d{1,2}):(\d{2})$/);
-  if (!m) return null;
-  const h = parseInt(m[1]), min = parseInt(m[2]);
-  if (h < 0 || h > 23 || min < 0 || min > 59) return null;
-  return `${h.toString().padStart(2, '0')}:${m[2]}`;
-}
-
-function resumenSolicitud(d) {
-  return `📋 *Resumen de tu solicitud:*\n\n` +
-    `📅 Fecha: *${d.fecha}*\n` +
-    `⏰ Hora: *${d.hora_inicio}*\n` +
-    `📍 Origen: *${d.origen}*\n` +
-    `🏁 Destino: *${d.destino}*\n` +
-    `👥 Pasajeros: *${d.pasajeros}*\n` +
-    `🏢 Dependencia: *${d.dependencia_nombre}*\n` +
-    `👤 Contacto: *${d.contacto_nombre}* — ${d.contacto_telefono}\n\n` +
-    `¿Confirmas el envío? Responde *SI* para enviar o *NO* para cancelar.`;
-}
-
-module.exports = { procesarMensaje, recordatorios };
+module.exports = {
+  contexto, getSesion, setSesion, getDependencias,
+  crearSolicitud, misSolicitudes, cancelarSolicitud,
+  confirmarServicio, guardarEncuesta,
+  serviciosConductorWa, iniciarServicioWa, finalizarServicioWa,
+  recordatorios
+};

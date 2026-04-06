@@ -10,6 +10,7 @@ import DepDashboard from './pages/dependencia/Dashboard';
 import NuevaSolicitud from './pages/dependencia/NuevaSolicitud';
 import ListaSolicitudes from './pages/dependencia/ListaSolicitudes';
 import DetalleSolicitud from './pages/dependencia/DetalleSolicitud';
+import BaseConocimiento from './pages/dependencia/BaseConocimiento';
 
 // Admin
 import AdminDashboard from './pages/admin/Dashboard';
@@ -48,6 +49,7 @@ export default function App() {
             <Route path="nueva" element={<NuevaSolicitud />} />
             <Route path="lista" element={<ListaSolicitudes />} />
             <Route path=":id" element={<DetalleSolicitud />} />
+            <Route path="conocimiento" element={<BaseConocimiento />} />
           </Route>
 
           {/* Admin */}

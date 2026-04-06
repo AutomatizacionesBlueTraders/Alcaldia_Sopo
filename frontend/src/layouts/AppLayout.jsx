@@ -15,6 +15,7 @@ const NAV_ITEMS = {
     { to: '/solicitudes', label: 'Dashboard' },
     { to: '/solicitudes/nueva', label: 'Nueva Solicitud' },
     { to: '/solicitudes/lista', label: 'Mis Solicitudes' },
+    { to: '/solicitudes/conocimiento', label: 'Info / FAQ' },
   ],
   conductor: [
     { to: '/servicios', label: 'Dashboard' },
