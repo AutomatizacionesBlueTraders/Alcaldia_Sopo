@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
+import { PaperAirplaneIcon, PencilIcon, CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 
 export default function NuevaSolicitud() {
   const navigate = useNavigate();
@@ -59,23 +60,47 @@ export default function NuevaSolicitud() {
   }
 
   if (confirmando) {
+    const items = [
+      { label: 'Fecha', value: form.fecha_servicio },
+      { label: 'Horario', value: `${form.hora_inicio} - ${form.hora_fin_estimada || 'N/A'}` },
+      { label: 'Origen', value: form.origen },
+      { label: 'Destino', value: form.destino },
+      { label: 'Pasajeros', value: form.pasajeros },
+      { label: 'Tipo', value: form.tipo_servicio || 'N/A' },
+      { label: 'Contacto', value: `${form.contacto_nombre} - ${form.contacto_telefono}` },
+    ];
+
     return (
-      <div className="max-w-xl mx-auto">
-        <h2 className="text-lg font-semibold mb-4">Confirmar Solicitud</h2>
-        <div className="bg-white rounded-lg shadow-sm border p-5 space-y-2 text-sm">
-          <p><span className="font-medium">Fecha:</span> {form.fecha_servicio}</p>
-          <p><span className="font-medium">Horario:</span> {form.hora_inicio} - {form.hora_fin_estimada || 'N/A'}</p>
-          <p><span className="font-medium">Origen:</span> {form.origen}</p>
-          <p><span className="font-medium">Destino:</span> {form.destino}</p>
-          <p><span className="font-medium">Pasajeros:</span> {form.pasajeros}</p>
-          <p><span className="font-medium">Tipo:</span> {form.tipo_servicio || 'N/A'}</p>
-          <p><span className="font-medium">Contacto:</span> {form.contacto_nombre} - {form.contacto_telefono}</p>
-          {form.observaciones && <p><span className="font-medium">Observaciones:</span> {form.observaciones}</p>}
+      <div className="max-w-xl mx-auto space-y-6">
+        <div>
+          <h2 className="page-title">Confirmar Solicitud</h2>
+          <p className="text-gray-500 text-sm mt-1">Revisa los datos antes de enviar</p>
         </div>
-        <div className="flex gap-3 mt-4">
-          <button onClick={() => setConfirmando(false)} className="px-4 py-2 border rounded text-sm hover:bg-gray-50">Editar</button>
-          <button onClick={handleSubmit} disabled={loading} className="px-4 py-2 bg-primary-600 text-white rounded text-sm hover:bg-primary-700 disabled:opacity-50">
-            {loading ? 'Enviando...' : 'Confirmar y Enviar'}
+        <div className="card p-6 space-y-3">
+          {items.map(({ label, value }) => (
+            <div key={label} className="flex justify-between py-2 border-b border-gray-50 last:border-0">
+              <span className="text-sm text-gray-500">{label}</span>
+              <span className="text-sm font-medium text-gray-900">{value}</span>
+            </div>
+          ))}
+          {form.observaciones && (
+            <div className="pt-2">
+              <span className="text-sm text-gray-500">Observaciones</span>
+              <p className="text-sm text-gray-700 mt-1">{form.observaciones}</p>
+            </div>
+          )}
+        </div>
+        <div className="flex gap-3">
+          <button onClick={() => setConfirmando(false)} className="btn-secondary flex-1 justify-center">
+            <PencilIcon className="w-4 h-4" /> Editar
+          </button>
+          <button onClick={handleSubmit} disabled={loading} className="btn-primary flex-1 justify-center">
+            {loading ? (
+              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            ) : <><CheckCircleIcon className="w-4 h-4" /> Confirmar y Enviar</>}
           </button>
         </div>
       </div>
@@ -83,53 +108,54 @@ export default function NuevaSolicitud() {
   }
 
   return (
-    <div className="max-w-xl mx-auto">
-      <h2 className="text-lg font-semibold mb-4">Nueva Solicitud de Transporte</h2>
+    <div className="max-w-xl mx-auto space-y-6">
+      <div>
+        <h2 className="page-title">Nueva Solicitud de Transporte</h2>
+        <p className="text-gray-500 text-sm mt-1">Completa el formulario para solicitar un servicio</p>
+      </div>
 
-      <form onSubmit={handlePreview} className="bg-white rounded-lg shadow-sm border p-5 space-y-4">
-        {error && <div className="bg-red-50 text-red-600 p-3 rounded text-sm">{error}</div>}
+      <form onSubmit={handlePreview} className="card p-6 space-y-5">
+        {error && (
+          <div className="bg-red-50 text-red-600 p-3.5 rounded-lg text-sm border border-red-100 flex items-center gap-2">
+            <ExclamationCircleIcon className="w-5 h-5 flex-shrink-0" />
+            {error}
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha del servicio *</label>
-            <input type="date" name="fecha_servicio" value={form.fecha_servicio} onChange={handleChange} required
-              className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:outline-none" />
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Fecha del servicio *</label>
+            <input type="date" name="fecha_servicio" value={form.fecha_servicio} onChange={handleChange} required className="input-field" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Hora inicio *</label>
-            <input type="time" name="hora_inicio" value={form.hora_inicio} onChange={handleChange} required
-              className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:outline-none" />
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Hora inicio *</label>
+            <input type="time" name="hora_inicio" value={form.hora_inicio} onChange={handleChange} required className="input-field" />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Hora fin estimada</label>
-          <input type="time" name="hora_fin_estimada" value={form.hora_fin_estimada} onChange={handleChange}
-            className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:outline-none" />
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Hora fin estimada</label>
+          <input type="time" name="hora_fin_estimada" value={form.hora_fin_estimada} onChange={handleChange} className="input-field" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Lugar de salida (origen) *</label>
-          <input type="text" name="origen" value={form.origen} onChange={handleChange} required placeholder="Ej: Alcaldía Municipal"
-            className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:outline-none" />
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Lugar de salida (origen) *</label>
+          <input type="text" name="origen" value={form.origen} onChange={handleChange} required placeholder="Ej: Alcaldía Municipal" className="input-field" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Destino *</label>
-          <input type="text" name="destino" value={form.destino} onChange={handleChange} required placeholder="Ej: Gobernación de Cundinamarca"
-            className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:outline-none" />
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Destino *</label>
+          <input type="text" name="destino" value={form.destino} onChange={handleChange} required placeholder="Ej: Gobernación de Cundinamarca" className="input-field" />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Pasajeros</label>
-            <input type="number" name="pasajeros" value={form.pasajeros} onChange={handleChange} min="1"
-              className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:outline-none" />
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Pasajeros</label>
+            <input type="number" name="pasajeros" value={form.pasajeros} onChange={handleChange} min="1" className="input-field" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de servicio</label>
-            <select name="tipo_servicio" value={form.tipo_servicio} onChange={handleChange}
-              className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:outline-none">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Tipo de servicio</label>
+            <select name="tipo_servicio" value={form.tipo_servicio} onChange={handleChange} className="input-field">
               <option value="">Seleccionar...</option>
               {tiposServicio.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
@@ -138,24 +164,22 @@ export default function NuevaSolicitud() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre contacto</label>
-            <input type="text" name="contacto_nombre" value={form.contacto_nombre} onChange={handleChange}
-              className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:outline-none" />
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Nombre contacto</label>
+            <input type="text" name="contacto_nombre" value={form.contacto_nombre} onChange={handleChange} className="input-field" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono contacto</label>
-            <input type="tel" name="contacto_telefono" value={form.contacto_telefono} onChange={handleChange}
-              className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:outline-none" />
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Teléfono contacto</label>
+            <input type="tel" name="contacto_telefono" value={form.contacto_telefono} onChange={handleChange} className="input-field" />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
-          <textarea name="observaciones" value={form.observaciones} onChange={handleChange} rows="3"
-            className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:outline-none" />
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Observaciones</label>
+          <textarea name="observaciones" value={form.observaciones} onChange={handleChange} rows="3" className="input-field" />
         </div>
 
-        <button type="submit" className="w-full bg-primary-600 text-white py-2 px-4 rounded-md text-sm hover:bg-primary-700">
+        <button type="submit" className="btn-primary w-full justify-center py-3">
+          <PaperAirplaneIcon className="w-4 h-4" />
           Revisar y Enviar
         </button>
       </form>

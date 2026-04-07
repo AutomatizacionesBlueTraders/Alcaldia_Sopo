@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ExclamationTriangleIcon, FunnelIcon, InboxIcon } from '@heroicons/react/24/outline';
 import api from '../../api/axios';
 
 export default function Novedades() {
@@ -31,56 +32,68 @@ export default function Novedades() {
   };
 
   return (
-    <div>
-      <h2 className="text-lg font-semibold mb-4">Novedades</h2>
+    <div className="space-y-6">
+      <div>
+        <h2 className="page-title flex items-center gap-2">
+          <ExclamationTriangleIcon className="w-6 h-6 text-primary-600" />
+          Novedades
+        </h2>
+        <p className="text-sm text-gray-500 mt-1">Reportes de novedades de vehiculos por conductores</p>
+      </div>
 
-      <div className="flex gap-3 mb-4">
-        <select value={filtro.estado} onChange={e => setFiltro({...filtro, estado: e.target.value})} className="border rounded px-3 py-1.5 text-sm">
+      <div className="flex gap-3 items-center">
+        <FunnelIcon className="w-4 h-4 text-gray-400" />
+        <select value={filtro.estado} onChange={e => setFiltro({...filtro, estado: e.target.value})} className="input-field w-auto">
           <option value="">Todos los estados</option>
           <option value="pendiente">Pendiente</option>
-          <option value="en_revision">En revisión</option>
+          <option value="en_revision">En revision</option>
           <option value="en_mantenimiento">En mantenimiento</option>
           <option value="resuelto">Resuelto</option>
         </select>
-        <select value={filtro.urgencia} onChange={e => setFiltro({...filtro, urgencia: e.target.value})} className="border rounded px-3 py-1.5 text-sm">
+        <select value={filtro.urgencia} onChange={e => setFiltro({...filtro, urgencia: e.target.value})} className="input-field w-auto">
           <option value="">Todas las urgencias</option>
-          <option value="critica">Crítica</option>
+          <option value="critica">Critica</option>
           <option value="alta">Alta</option>
           <option value="media">Media</option>
           <option value="baja">Baja</option>
         </select>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+      <div className="card overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-left text-gray-500">
+          <thead className="table-header">
             <tr>
-              <th className="px-4 py-2">Placa</th>
-              <th className="px-4 py-2">Conductor</th>
-              <th className="px-4 py-2">Tipo</th>
-              <th className="px-4 py-2">Urgencia</th>
-              <th className="px-4 py-2">Puede operar</th>
-              <th className="px-4 py-2">Estado</th>
-              <th className="px-4 py-2">Acciones</th>
+              <th className="table-cell">Placa</th>
+              <th className="table-cell">Conductor</th>
+              <th className="table-cell">Tipo</th>
+              <th className="table-cell">Urgencia</th>
+              <th className="table-cell">Puede operar</th>
+              <th className="table-cell">Estado</th>
+              <th className="table-cell">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="7" className="px-4 py-6 text-center text-gray-400">Cargando...</td></tr>
+              <tr><td colSpan="7" className="px-5 py-8 text-center">
+                <div className="animate-spin w-6 h-6 border-4 border-primary-200 border-t-primary-600 rounded-full mx-auto" />
+              </td></tr>
             ) : novedades.length === 0 ? (
-              <tr><td colSpan="7" className="px-4 py-6 text-center text-gray-400">Sin novedades</td></tr>
+              <tr><td colSpan="7" className="px-5 py-8 text-center text-gray-400">
+                <InboxIcon className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                Sin novedades
+              </td></tr>
             ) : novedades.map(n => (
-              <tr key={n.id} className="border-t hover:bg-gray-50">
-                <td className="px-4 py-2 font-medium">{n.placa}</td>
-                <td className="px-4 py-2">{n.conductor_nombre}</td>
-                <td className="px-4 py-2">{n.tipo}</td>
-                <td className="px-4 py-2"><span className={`text-xs px-2 py-0.5 rounded ${urgenciaColor(n.urgencia)}`}>{n.urgencia}</span></td>
-                <td className="px-4 py-2 text-xs">{n.puede_operar}</td>
-                <td className="px-4 py-2 text-xs">{n.estado}</td>
-                <td className="px-4 py-2">
-                  <select value={n.estado} onChange={e => cambiarEstado(n.id, e.target.value)} className="border rounded px-2 py-1 text-xs">
+              <tr key={n.id} className="table-row">
+                <td className="table-cell font-medium">{n.placa}</td>
+                <td className="table-cell">{n.conductor_nombre}</td>
+                <td className="table-cell">{n.tipo}</td>
+                <td className="table-cell"><span className={`text-xs px-2 py-0.5 rounded-full ${urgenciaColor(n.urgencia)}`}>{n.urgencia}</span></td>
+                <td className="table-cell text-xs">{n.puede_operar}</td>
+                <td className="table-cell text-xs">{n.estado}</td>
+                <td className="table-cell">
+                  <select value={n.estado} onChange={e => cambiarEstado(n.id, e.target.value)} className="input-field w-auto py-1.5 text-xs">
                     <option value="pendiente">Pendiente</option>
-                    <option value="en_revision">En revisión</option>
+                    <option value="en_revision">En revision</option>
                     <option value="en_mantenimiento">A mantenimiento</option>
                     <option value="resuelto">Resuelto</option>
                   </select>

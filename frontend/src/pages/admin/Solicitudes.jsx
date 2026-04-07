@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 import EstadoBadge from '../../components/EstadoBadge';
+import { FunnelIcon, ClipboardDocumentListIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 const ESTADOS = ['', 'ENVIADA', 'PENDIENTE_PROGRAMACION', 'PROGRAMADA', 'CONFIRMADA', 'EN_EJECUCION', 'FINALIZADA', 'CANCELADA', 'RECHAZADA'];
 
@@ -32,89 +33,118 @@ export default function AdminSolicitudes() {
   const totalPages = Math.ceil(total / 20);
 
   return (
-    <div>
-      <h2 className="text-lg font-semibold mb-4">Todas las Solicitudes</h2>
+    <div className="space-y-6">
+      <div>
+        <h2 className="page-title">Todas las Solicitudes</h2>
+        <p className="text-gray-500 text-sm mt-1">{total} solicitudes en total</p>
+      </div>
 
-      <div className="bg-white rounded-lg shadow-sm border p-4 mb-4 flex flex-wrap gap-3 items-end">
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Estado</label>
-          <select value={filtros.estado} onChange={e => { setFiltros({...filtros, estado: e.target.value}); setPage(1); }}
-            className="border rounded px-3 py-1.5 text-sm">
-            <option value="">Todos</option>
-            {ESTADOS.filter(Boolean).map(e => <option key={e} value={e}>{e}</option>)}
-          </select>
+      {/* Filtros */}
+      <div className="card p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <FunnelIcon className="w-4 h-4 text-gray-400" />
+          <span className="text-sm font-medium text-gray-700">Filtros</span>
         </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Dependencia</label>
-          <select value={filtros.dependencia_id} onChange={e => { setFiltros({...filtros, dependencia_id: e.target.value}); setPage(1); }}
-            className="border rounded px-3 py-1.5 text-sm">
-            <option value="">Todas</option>
-            {deps.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Canal</label>
-          <select value={filtros.canal} onChange={e => { setFiltros({...filtros, canal: e.target.value}); setPage(1); }}
-            className="border rounded px-3 py-1.5 text-sm">
-            <option value="">Todos</option>
-            <option value="web">Web</option>
-            <option value="whatsapp">WhatsApp</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Desde</label>
-          <input type="date" value={filtros.fecha_desde} onChange={e => { setFiltros({...filtros, fecha_desde: e.target.value}); setPage(1); }}
-            className="border rounded px-3 py-1.5 text-sm" />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Hasta</label>
-          <input type="date" value={filtros.fecha_hasta} onChange={e => { setFiltros({...filtros, fecha_hasta: e.target.value}); setPage(1); }}
-            className="border rounded px-3 py-1.5 text-sm" />
+        <div className="flex flex-wrap gap-3 items-end">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">Estado</label>
+            <select value={filtros.estado} onChange={e => { setFiltros({...filtros, estado: e.target.value}); setPage(1); }}
+              className="input-field w-auto min-w-[140px]">
+              <option value="">Todos</option>
+              {ESTADOS.filter(Boolean).map(e => <option key={e} value={e}>{e}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">Dependencia</label>
+            <select value={filtros.dependencia_id} onChange={e => { setFiltros({...filtros, dependencia_id: e.target.value}); setPage(1); }}
+              className="input-field w-auto min-w-[160px]">
+              <option value="">Todas</option>
+              {deps.map(d => <option key={d.id} value={d.id}>{d.nombre}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">Canal</label>
+            <select value={filtros.canal} onChange={e => { setFiltros({...filtros, canal: e.target.value}); setPage(1); }}
+              className="input-field w-auto min-w-[110px]">
+              <option value="">Todos</option>
+              <option value="web">Web</option>
+              <option value="whatsapp">WhatsApp</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">Desde</label>
+            <input type="date" value={filtros.fecha_desde} onChange={e => { setFiltros({...filtros, fecha_desde: e.target.value}); setPage(1); }}
+              className="input-field w-auto" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1.5">Hasta</label>
+            <input type="date" value={filtros.fecha_hasta} onChange={e => { setFiltros({...filtros, fecha_hasta: e.target.value}); setPage(1); }}
+              className="input-field w-auto" />
+          </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+      {/* Tabla */}
+      <div className="card overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-left text-gray-500">
+          <thead className="table-header">
             <tr>
-              <th className="px-4 py-2">#</th>
-              <th className="px-4 py-2">Fecha</th>
-              <th className="px-4 py-2">Dependencia</th>
-              <th className="px-4 py-2">Origen → Destino</th>
-              <th className="px-4 py-2">Pax</th>
-              <th className="px-4 py-2">Estado</th>
-              <th className="px-4 py-2">Canal</th>
+              <th className="table-cell">#</th>
+              <th className="table-cell">Fecha</th>
+              <th className="table-cell">Dependencia</th>
+              <th className="table-cell">Ruta</th>
+              <th className="table-cell">Pax</th>
+              <th className="table-cell">Estado</th>
+              <th className="table-cell">Canal</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="7" className="px-4 py-6 text-center text-gray-400">Cargando...</td></tr>
+              <tr><td colSpan="7" className="px-5 py-10 text-center">
+                <div className="animate-spin w-6 h-6 border-4 border-primary-200 border-t-primary-600 rounded-full mx-auto" />
+              </td></tr>
             ) : solicitudes.length === 0 ? (
-              <tr><td colSpan="7" className="px-4 py-6 text-center text-gray-400">Sin solicitudes</td></tr>
+              <tr><td colSpan="7" className="px-5 py-10 text-center text-gray-400">
+                <ClipboardDocumentListIcon className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                Sin solicitudes
+              </td></tr>
             ) : solicitudes.map(s => (
-              <tr key={s.id} className="border-t hover:bg-gray-50">
-                <td className="px-4 py-2">
-                  <Link to={`/admin/solicitudes/${s.id}`} className="text-primary-600 hover:underline">{s.id}</Link>
+              <tr key={s.id} className="table-row">
+                <td className="table-cell">
+                  <Link to={`/admin/solicitudes/${s.id}`} className="text-primary-600 hover:text-primary-700 font-semibold">#{s.id}</Link>
                 </td>
-                <td className="px-4 py-2">{s.fecha_servicio?.substring(0, 10)}</td>
-                <td className="px-4 py-2 text-xs">{s.dependencia_nombre}</td>
-                <td className="px-4 py-2 text-xs truncate max-w-[200px]">{s.origen} → {s.destino}</td>
-                <td className="px-4 py-2">{s.pasajeros}</td>
-                <td className="px-4 py-2"><EstadoBadge estado={s.estado} /></td>
-                <td className="px-4 py-2 text-xs text-gray-400">{s.canal === 'whatsapp' ? 'WA' : 'Web'}</td>
+                <td className="table-cell">{s.fecha_servicio?.substring(0, 10)}</td>
+                <td className="table-cell text-xs">{s.dependencia_nombre}</td>
+                <td className="table-cell text-xs truncate max-w-[200px]">
+                  {s.origen} <span className="text-gray-400 mx-1">&rarr;</span> {s.destino}
+                </td>
+                <td className="table-cell text-center">{s.pasajeros}</td>
+                <td className="table-cell"><EstadoBadge estado={s.estado} /></td>
+                <td className="table-cell">
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${s.canal === 'whatsapp' ? 'bg-green-50 text-green-700' : 'bg-blue-50 text-blue-700'}`}>
+                    {s.canal === 'whatsapp' ? 'WA' : 'Web'}
+                  </span>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
+      {/* Paginación */}
       {totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-4">
-          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-            className="px-3 py-1 border rounded text-sm disabled:opacity-30">Anterior</button>
-          <span className="px-3 py-1 text-sm text-gray-500">{page} / {totalPages}</span>
-          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-            className="px-3 py-1 border rounded text-sm disabled:opacity-30">Siguiente</button>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500">Página {page} de {totalPages}</p>
+          <div className="flex gap-2">
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+              className="btn-secondary py-2 px-3 disabled:opacity-30">
+              <ChevronLeftIcon className="w-4 h-4" /> Anterior
+            </button>
+            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+              className="btn-secondary py-2 px-3 disabled:opacity-30">
+              Siguiente <ChevronRightIcon className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
     </div>

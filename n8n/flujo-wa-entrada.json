@@ -12,16 +12,39 @@
       "name": "WEBHOOK TWILIO",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [200, 400]
+      "position": [
+        200,
+        400
+      ]
     },
     {
       "parameters": {
         "assignments": {
           "assignments": [
-            { "id": "a1", "name": "telefono_raw", "value": "={{ $json.body.From }}", "type": "string" },
-            { "id": "a2", "name": "numero_from",  "value": "={{ $json.body.To }}",   "type": "string" },
-            { "id": "a3", "name": "mensaje",      "value": "={{ $json.body.Body }}",  "type": "string" },
-            { "id": "a4", "name": "media_url",    "value": "={{ $json.body.MediaUrl0 }}", "type": "string" }
+            {
+              "id": "a1",
+              "name": "telefono_raw",
+              "value": "={{ $json.body.From }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "numero_from",
+              "value": "={{ $json.body.To }}",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "mensaje",
+              "value": "={{ $json.body.Body }}",
+              "type": "string"
+            },
+            {
+              "id": "a4",
+              "name": "media_url",
+              "value": "={{ $json.body.MediaUrl0 }}",
+              "type": "string"
+            }
           ]
         },
         "options": {}
@@ -30,7 +53,10 @@
       "name": "EXTRAER DATOS",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [420, 400]
+      "position": [
+        420,
+        400
+      ]
     },
     {
       "parameters": {
@@ -40,7 +66,10 @@
       "name": "NORMALIZAR TELEFONO",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [640, 400]
+      "position": [
+        640,
+        400
+      ]
     },
     {
       "parameters": {
@@ -52,7 +81,10 @@
       "name": "OBTENER CONTEXTO",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [860, 400]
+      "position": [
+        860,
+        400
+      ]
     },
     {
       "parameters": {
@@ -60,32 +92,67 @@
           "values": [
             {
               "conditions": {
-                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict", "version": 3 },
-                "conditions": [{ "leftValue": "={{ $json.tipo }}", "rightValue": "conductor", "operator": { "type": "string", "operation": "equals" }, "id": "r1" }],
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.tipo }}",
+                    "rightValue": "conductor",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "r1"
+                  }
+                ],
                 "combinator": "and"
               },
-              "renameOutput": true, "outputKey": "conductor"
+              "renameOutput": true,
+              "outputKey": "conductor"
             },
             {
               "conditions": {
-                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict", "version": 3 },
-                "conditions": [{ "leftValue": "={{ $json.tipo }}", "rightValue": "dependencia", "operator": { "type": "string", "operation": "equals" }, "id": "r2" }],
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.tipo }}",
+                    "rightValue": "dependencia",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "r2"
+                  }
+                ],
                 "combinator": "and"
               },
-              "renameOutput": true, "outputKey": "dependencia"
+              "renameOutput": true,
+              "outputKey": "dependencia"
             }
           ]
         },
-        "options": { "fallbackOutput": "extra" }
+        "options": {
+          "fallbackOutput": "extra"
+        }
       },
       "id": "node-005",
       "name": "TIPO USUARIO",
       "type": "n8n-nodes-base.switch",
-      "typeVersion": 3,
-      "position": [1080, 400]
+      "typeVersion": 3.2,
+      "position": [
+        1080,
+        400
+      ]
     },
-
-    // ── RAMA CONDUCTOR ──────────────────────────────────────────────────────
     {
       "parameters": {
         "promptType": "define",
@@ -98,15 +165,24 @@
       "name": "AI AGENT CONDUCTOR",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
-      "position": [1300, 100]
+      "position": [
+        1300,
+        100
+      ]
     },
     {
-      "parameters": { "model": "gpt-4o-mini", "options": {} },
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {}
+      },
       "id": "node-011",
       "name": "OpenAI Conductor",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
-      "position": [1080, -100]
+      "position": [
+        1080,
+        -100
+      ]
     },
     {
       "parameters": {
@@ -117,7 +193,10 @@
       "name": "Memoria Conductor",
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.3,
-      "position": [1300, -100]
+      "position": [
+        1300,
+        -100
+      ]
     },
     {
       "parameters": {
@@ -130,8 +209,11 @@
       "id": "node-013",
       "name": "TOOL ver_servicios",
       "type": "n8n-nodes-base.httpRequestTool",
-      "typeVersion": 1,
-      "position": [1520, -100]
+      "typeVersion": 4.2,
+      "position": [
+        1520,
+        -100
+      ]
     },
     {
       "parameters": {
@@ -141,20 +223,32 @@
         "url": "http://backend:3000/api/whatsapp/iniciar-servicio-wa",
         "sendBody": true,
         "contentType": "json",
-        "body": {
-          "values": [
-            { "name": "asignacion_id", "value": "={{ $fromAI('asignacion_id', 'ID numérico de la asignación/servicio') }}" },
-            { "name": "km_inicial",    "value": "={{ $fromAI('km_inicial', 'Kilómetros iniciales del vehículo') }}" },
-            { "name": "telefono",      "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono }}" }
+        "options": {},
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "asignacion_id",
+              "value": "={{ $fromAI('asignacion_id', 'ID numérico de la asignación/servicio') }}"
+            },
+            {
+              "name": "km_inicial",
+              "value": "={{ $fromAI('km_inicial', 'Kilómetros iniciales del vehículo') }}"
+            },
+            {
+              "name": "telefono",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono }}"
+            }
           ]
-        },
-        "options": {}
+        }
       },
       "id": "node-014",
       "name": "TOOL iniciar_servicio",
       "type": "n8n-nodes-base.httpRequestTool",
-      "typeVersion": 1,
-      "position": [1740, -100]
+      "typeVersion": 4.2,
+      "position": [
+        1740,
+        -100
+      ]
     },
     {
       "parameters": {
@@ -164,20 +258,32 @@
         "url": "http://backend:3000/api/whatsapp/finalizar-servicio-wa",
         "sendBody": true,
         "contentType": "json",
-        "body": {
-          "values": [
-            { "name": "asignacion_id", "value": "={{ $fromAI('asignacion_id', 'ID numérico de la asignación/servicio') }}" },
-            { "name": "km_final",      "value": "={{ $fromAI('km_final', 'Kilómetros finales del vehículo') }}" },
-            { "name": "telefono",      "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono }}" }
+        "options": {},
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "asignacion_id",
+              "value": "={{ $fromAI('asignacion_id', 'ID numérico de la asignación/servicio') }}"
+            },
+            {
+              "name": "km_final",
+              "value": "={{ $fromAI('km_final', 'Kilómetros finales del vehículo') }}"
+            },
+            {
+              "name": "telefono",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono }}"
+            }
           ]
-        },
-        "options": {}
+        }
       },
       "id": "node-015",
       "name": "TOOL finalizar_servicio",
       "type": "n8n-nodes-base.httpRequestTool",
-      "typeVersion": 1,
-      "position": [1960, -100]
+      "typeVersion": 4.2,
+      "position": [
+        1960,
+        -100
+      ]
     },
     {
       "parameters": {
@@ -189,9 +295,18 @@
         "contentType": "form-urlencoded",
         "body": {
           "values": [
-            { "name": "From", "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}" },
-            { "name": "To",   "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}" },
-            { "name": "Body", "value": "={{ $json.output }}" }
+            {
+              "name": "From",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}"
+            },
+            {
+              "name": "To",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}"
+            },
+            {
+              "name": "Body",
+              "value": "={{ $json.output }}"
+            }
           ]
         },
         "options": {}
@@ -200,95 +315,216 @@
       "name": "ENVIAR RESPUESTA CONDUCTOR",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1520, 100]
+      "position": [
+        1520,
+        100
+      ]
     },
-
-    // ── RAMA DEPENDENCIA: router por estado de sesión ───────────────────────
     {
       "parameters": {
         "rules": {
           "values": [
             {
               "conditions": {
-                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict", "version": 3 },
-                "conditions": [{ "leftValue": "={{ $json.sesion_estado }}", "rightValue": "en_solicitud", "operator": { "type": "string", "operation": "equals" }, "id": "s1" }],
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.sesion_estado }}",
+                    "rightValue": "en_solicitud",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "s1"
+                  }
+                ],
                 "combinator": "and"
               },
-              "renameOutput": true, "outputKey": "en_solicitud"
+              "renameOutput": true,
+              "outputKey": "en_solicitud"
             },
             {
               "conditions": {
-                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict", "version": 3 },
-                "conditions": [{ "leftValue": "={{ $json.sesion_estado }}", "rightValue": "cancelar_id", "operator": { "type": "string", "operation": "equals" }, "id": "s2" }],
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.sesion_estado }}",
+                    "rightValue": "cancelar_id",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "s2"
+                  }
+                ],
                 "combinator": "and"
               },
-              "renameOutput": true, "outputKey": "cancelar_id"
+              "renameOutput": true,
+              "outputKey": "cancelar_id"
             },
             {
               "conditions": {
-                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict", "version": 3 },
-                "conditions": [{ "leftValue": "={{ $json.sesion_estado }}", "rightValue": "confirmar_servicio", "operator": { "type": "string", "operation": "equals" }, "id": "s3" }],
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.sesion_estado }}",
+                    "rightValue": "confirmar_servicio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "s3"
+                  }
+                ],
                 "combinator": "and"
               },
-              "renameOutput": true, "outputKey": "confirmar_servicio"
+              "renameOutput": true,
+              "outputKey": "confirmar_servicio"
             },
             {
               "conditions": {
-                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict", "version": 3 },
-                "conditions": [{ "leftValue": "={{ $json.sesion_estado }}", "rightValue": "encuesta", "operator": { "type": "string", "operation": "equals" }, "id": "s4" }],
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.sesion_estado }}",
+                    "rightValue": "encuesta",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "s4"
+                  }
+                ],
                 "combinator": "and"
               },
-              "renameOutput": true, "outputKey": "encuesta"
+              "renameOutput": true,
+              "outputKey": "encuesta"
             }
           ]
         },
-        "options": { "fallbackOutput": "extra" }
+        "options": {
+          "fallbackOutput": "extra"
+        }
       },
       "id": "node-020",
       "name": "ESTADO SESION",
       "type": "n8n-nodes-base.switch",
-      "typeVersion": 3,
-      "position": [1300, 400]
+      "typeVersion": 3.2,
+      "position": [
+        1300,
+        400
+      ]
     },
-
-    // ── IDLE: Switch por opción de menú ─────────────────────────────────────
     {
       "parameters": {
         "rules": {
           "values": [
             {
               "conditions": {
-                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict", "version": 3 },
-                "conditions": [{ "leftValue": "={{ $('NORMALIZAR TELEFONO').item.json.mensaje.trim() }}", "rightValue": "1", "operator": { "type": "string", "operation": "equals" }, "id": "m1" }],
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('NORMALIZAR TELEFONO').item.json.mensaje.trim() }}",
+                    "rightValue": "1",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "m1"
+                  }
+                ],
                 "combinator": "and"
               },
-              "renameOutput": true, "outputKey": "solicitar"
+              "renameOutput": true,
+              "outputKey": "solicitar"
             },
             {
               "conditions": {
-                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict", "version": 3 },
-                "conditions": [{ "leftValue": "={{ $('NORMALIZAR TELEFONO').item.json.mensaje.trim() }}", "rightValue": "2", "operator": { "type": "string", "operation": "equals" }, "id": "m2" }],
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('NORMALIZAR TELEFONO').item.json.mensaje.trim() }}",
+                    "rightValue": "2",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "m2"
+                  }
+                ],
                 "combinator": "and"
               },
-              "renameOutput": true, "outputKey": "consultar"
+              "renameOutput": true,
+              "outputKey": "consultar"
             },
             {
               "conditions": {
-                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict", "version": 3 },
-                "conditions": [{ "leftValue": "={{ $('NORMALIZAR TELEFONO').item.json.mensaje.trim() }}", "rightValue": "3", "operator": { "type": "string", "operation": "equals" }, "id": "m3" }],
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('NORMALIZAR TELEFONO').item.json.mensaje.trim() }}",
+                    "rightValue": "3",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "m3"
+                  }
+                ],
                 "combinator": "and"
               },
-              "renameOutput": true, "outputKey": "cancelar"
+              "renameOutput": true,
+              "outputKey": "cancelar"
             }
           ]
         },
-        "options": { "fallbackOutput": "extra" }
+        "options": {
+          "fallbackOutput": "extra"
+        }
       },
       "id": "node-021",
       "name": "OPCION MENU",
       "type": "n8n-nodes-base.switch",
-      "typeVersion": 3,
-      "position": [1520, 600]
+      "typeVersion": 3.2,
+      "position": [
+        1520,
+        600
+      ]
     },
     {
       "parameters": {
@@ -300,9 +536,18 @@
         "contentType": "form-urlencoded",
         "body": {
           "values": [
-            { "name": "From", "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}" },
-            { "name": "To",   "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}" },
-            { "name": "Body", "value": "Hola! Soy el asistente de *Transporte Alcaldía de Sopó* 🚗\n\n¿Qué deseas hacer?\n\n1️⃣ Solicitar un servicio de transporte\n2️⃣ Consultar mis solicitudes activas\n3️⃣ Cancelar una solicitud\n\nResponde con el número de tu opción." }
+            {
+              "name": "From",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}"
+            },
+            {
+              "name": "To",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}"
+            },
+            {
+              "name": "Body",
+              "value": "Hola! Soy el asistente de *Transporte Alcaldía de Sopó* 🚗\n\n¿Qué deseas hacer?\n\n1️⃣ Solicitar un servicio de transporte\n2️⃣ Consultar mis solicitudes activas\n3️⃣ Cancelar una solicitud\n\nResponde con el número de tu opción."
+            }
           ]
         },
         "options": {}
@@ -311,10 +556,11 @@
       "name": "ENVIAR MENU",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1740, 800]
+      "position": [
+        1740,
+        800
+      ]
     },
-
-    // ── OPCIÓN 1: SOLICITAR (AI Agent) ──────────────────────────────────────
     {
       "parameters": {
         "method": "POST",
@@ -323,9 +569,18 @@
         "contentType": "json",
         "body": {
           "values": [
-            { "name": "telefono", "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono }}" },
-            { "name": "estado",   "value": "en_solicitud" },
-            { "name": "datos",    "value": "={}" }
+            {
+              "name": "telefono",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono }}"
+            },
+            {
+              "name": "estado",
+              "value": "en_solicitud"
+            },
+            {
+              "name": "datos",
+              "value": "={}"
+            }
           ]
         },
         "options": {}
@@ -334,7 +589,10 @@
       "name": "INICIAR SESION SOLICITUD",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1740, 400]
+      "position": [
+        1740,
+        400
+      ]
     },
     {
       "parameters": {
@@ -348,15 +606,24 @@
       "name": "AI AGENT SOLICITAR",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
-      "position": [1960, 400]
+      "position": [
+        1960,
+        400
+      ]
     },
     {
-      "parameters": { "model": "gpt-4o-mini", "options": {} },
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {}
+      },
       "id": "node-032",
       "name": "OpenAI Solicitar",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
-      "position": [1740, 200]
+      "position": [
+        1740,
+        200
+      ]
     },
     {
       "parameters": {
@@ -367,7 +634,10 @@
       "name": "Memoria Solicitar",
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.3,
-      "position": [1960, 200]
+      "position": [
+        1960,
+        200
+      ]
     },
     {
       "parameters": {
@@ -380,8 +650,11 @@
       "id": "node-034",
       "name": "TOOL obtener_dependencias",
       "type": "n8n-nodes-base.httpRequestTool",
-      "typeVersion": 1,
-      "position": [2180, 200]
+      "typeVersion": 4.2,
+      "position": [
+        2180,
+        200
+      ]
     },
     {
       "parameters": {
@@ -391,26 +664,56 @@
         "url": "http://backend:3000/api/whatsapp/crear-solicitud",
         "sendBody": true,
         "contentType": "json",
-        "body": {
-          "values": [
-            { "name": "telefono",          "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono }}" },
-            { "name": "fecha_servicio",    "value": "={{ $fromAI('fecha_servicio', 'Fecha en formato YYYY-MM-DD') }}" },
-            { "name": "hora_inicio",       "value": "={{ $fromAI('hora_inicio', 'Hora en formato HH:MM') }}" },
-            { "name": "origen",            "value": "={{ $fromAI('origen', 'Lugar de origen del servicio') }}" },
-            { "name": "destino",           "value": "={{ $fromAI('destino', 'Lugar de destino del servicio') }}" },
-            { "name": "pasajeros",         "value": "={{ $fromAI('pasajeros', 'Número de pasajeros') }}" },
-            { "name": "dependencia_id",    "value": "={{ $fromAI('dependencia_id', 'ID numérico de la dependencia') }}" },
-            { "name": "contacto_nombre",   "value": "={{ $fromAI('contacto_nombre', 'Nombre completo del contacto') }}" },
-            { "name": "contacto_telefono", "value": "={{ $fromAI('contacto_telefono', 'Teléfono del contacto') }}" }
+        "options": {},
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "telefono",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono }}"
+            },
+            {
+              "name": "fecha_servicio",
+              "value": "={{ $fromAI('fecha_servicio', 'Fecha en formato YYYY-MM-DD') }}"
+            },
+            {
+              "name": "hora_inicio",
+              "value": "={{ $fromAI('hora_inicio', 'Hora en formato HH:MM') }}"
+            },
+            {
+              "name": "origen",
+              "value": "={{ $fromAI('origen', 'Lugar de origen del servicio') }}"
+            },
+            {
+              "name": "destino",
+              "value": "={{ $fromAI('destino', 'Lugar de destino del servicio') }}"
+            },
+            {
+              "name": "pasajeros",
+              "value": "={{ $fromAI('pasajeros', 'Número de pasajeros') }}"
+            },
+            {
+              "name": "dependencia_id",
+              "value": "={{ $fromAI('dependencia_id', 'ID numérico de la dependencia') }}"
+            },
+            {
+              "name": "contacto_nombre",
+              "value": "={{ $fromAI('contacto_nombre', 'Nombre completo del contacto') }}"
+            },
+            {
+              "name": "contacto_telefono",
+              "value": "={{ $fromAI('contacto_telefono', 'Teléfono del contacto') }}"
+            }
           ]
-        },
-        "options": {}
+        }
       },
       "id": "node-035",
       "name": "TOOL crear_solicitud",
       "type": "n8n-nodes-base.httpRequestTool",
-      "typeVersion": 1,
-      "position": [2400, 200]
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        200
+      ]
     },
     {
       "parameters": {
@@ -420,20 +723,32 @@
         "url": "http://backend:3000/api/whatsapp/sesion",
         "sendBody": true,
         "contentType": "json",
-        "body": {
-          "values": [
-            { "name": "telefono", "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono }}" },
-            { "name": "estado",   "value": "idle" },
-            { "name": "datos",    "value": "={}" }
+        "options": {},
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "telefono",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono }}"
+            },
+            {
+              "name": "estado",
+              "value": "idle"
+            },
+            {
+              "name": "datos",
+              "value": "={}"
+            }
           ]
-        },
-        "options": {}
+        }
       },
       "id": "node-036",
       "name": "TOOL cancelar_flujo",
       "type": "n8n-nodes-base.httpRequestTool",
-      "typeVersion": 1,
-      "position": [2620, 200]
+      "typeVersion": 4.2,
+      "position": [
+        2620,
+        200
+      ]
     },
     {
       "parameters": {
@@ -445,9 +760,18 @@
         "contentType": "form-urlencoded",
         "body": {
           "values": [
-            { "name": "From", "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}" },
-            { "name": "To",   "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}" },
-            { "name": "Body", "value": "={{ $json.output }}" }
+            {
+              "name": "From",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}"
+            },
+            {
+              "name": "To",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}"
+            },
+            {
+              "name": "Body",
+              "value": "={{ $json.output }}"
+            }
           ]
         },
         "options": {}
@@ -456,10 +780,11 @@
       "name": "ENVIAR RESPUESTA SOLICITAR",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [2180, 400]
+      "position": [
+        2180,
+        400
+      ]
     },
-
-    // ── OPCIÓN 2: CONSULTAR ──────────────────────────────────────────────────
     {
       "parameters": {
         "method": "GET",
@@ -470,7 +795,10 @@
       "name": "OBTENER SOLICITUDES",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1740, 600]
+      "position": [
+        1740,
+        600
+      ]
     },
     {
       "parameters": {
@@ -480,7 +808,10 @@
       "name": "FORMATEAR SOLICITUDES",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1960, 600]
+      "position": [
+        1960,
+        600
+      ]
     },
     {
       "parameters": {
@@ -492,9 +823,18 @@
         "contentType": "form-urlencoded",
         "body": {
           "values": [
-            { "name": "From", "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}" },
-            { "name": "To",   "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}" },
-            { "name": "Body", "value": "={{ $json.mensaje }}" }
+            {
+              "name": "From",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}"
+            },
+            {
+              "name": "To",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}"
+            },
+            {
+              "name": "Body",
+              "value": "={{ $json.mensaje }}"
+            }
           ]
         },
         "options": {}
@@ -503,10 +843,11 @@
       "name": "ENVIAR CONSULTA",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [2180, 600]
+      "position": [
+        2180,
+        600
+      ]
     },
-
-    // ── OPCIÓN 3: CANCELAR (primer mensaje — pide ID) ────────────────────────
     {
       "parameters": {
         "method": "POST",
@@ -515,9 +856,18 @@
         "contentType": "json",
         "body": {
           "values": [
-            { "name": "telefono", "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono }}" },
-            { "name": "estado",   "value": "cancelar_id" },
-            { "name": "datos",    "value": "={}" }
+            {
+              "name": "telefono",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono }}"
+            },
+            {
+              "name": "estado",
+              "value": "cancelar_id"
+            },
+            {
+              "name": "datos",
+              "value": "={}"
+            }
           ]
         },
         "options": {}
@@ -526,7 +876,10 @@
       "name": "ACTIVAR ESTADO CANCELAR",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1740, 1000]
+      "position": [
+        1740,
+        1000
+      ]
     },
     {
       "parameters": {
@@ -538,9 +891,18 @@
         "contentType": "form-urlencoded",
         "body": {
           "values": [
-            { "name": "From", "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}" },
-            { "name": "To",   "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}" },
-            { "name": "Body", "value": "🚫 ¿Cuál es el número de la solicitud que deseas cancelar?\\n\\nEjemplo: *12*\\n\\nEscribe *menú* para volver." }
+            {
+              "name": "From",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}"
+            },
+            {
+              "name": "To",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}"
+            },
+            {
+              "name": "Body",
+              "value": "🚫 ¿Cuál es el número de la solicitud que deseas cancelar?\\n\\nEjemplo: *12*\\n\\nEscribe *menú* para volver."
+            }
           ]
         },
         "options": {}
@@ -549,10 +911,11 @@
       "name": "PEDIR ID CANCELAR",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1960, 1000]
+      "position": [
+        1960,
+        1000
+      ]
     },
-
-    // ── ESTADO cancelar_id: ejecutar cancelación ─────────────────────────────
     {
       "parameters": {
         "jsCode": "const msg = ($('NORMALIZAR TELEFONO').item.json.mensaje || '').trim();\nconst id = parseInt(msg);\nif (isNaN(id) || id <= 0) {\n  return { valido: false, solicitud_id: null };\n}\nreturn { valido: true, solicitud_id: id };"
@@ -561,21 +924,42 @@
       "name": "PARSEAR ID CANCELAR",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1520, 1000]
+      "position": [
+        1520,
+        1000
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
-          "conditions": [{ "leftValue": "={{ $json.valido }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" }, "id": "c1" }],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.valido }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "id": "c1"
+            }
+          ],
           "combinator": "and"
         }
       },
       "id": "node-053",
       "name": "ES ID VALIDO",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [1740, 1200]
+      "typeVersion": 2.2,
+      "position": [
+        1740,
+        1200
+      ]
     },
     {
       "parameters": {
@@ -585,8 +969,14 @@
         "contentType": "json",
         "body": {
           "values": [
-            { "name": "solicitud_id", "value": "={{ $('PARSEAR ID CANCELAR').item.json.solicitud_id }}" },
-            { "name": "telefono",     "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono }}" }
+            {
+              "name": "solicitud_id",
+              "value": "={{ $('PARSEAR ID CANCELAR').item.json.solicitud_id }}"
+            },
+            {
+              "name": "telefono",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono }}"
+            }
           ]
         },
         "options": {}
@@ -595,7 +985,10 @@
       "name": "EJECUTAR CANCELACION",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1960, 1200]
+      "position": [
+        1960,
+        1200
+      ]
     },
     {
       "parameters": {
@@ -607,9 +1000,18 @@
         "contentType": "form-urlencoded",
         "body": {
           "values": [
-            { "name": "From", "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}" },
-            { "name": "To",   "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}" },
-            { "name": "Body", "value": "={{ $json.mensaje }}" }
+            {
+              "name": "From",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}"
+            },
+            {
+              "name": "To",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}"
+            },
+            {
+              "name": "Body",
+              "value": "={{ $json.mensaje }}"
+            }
           ]
         },
         "options": {}
@@ -618,7 +1020,10 @@
       "name": "ENVIAR RESULTADO CANCELAR",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [2180, 1200]
+      "position": [
+        2180,
+        1200
+      ]
     },
     {
       "parameters": {
@@ -630,9 +1035,18 @@
         "contentType": "form-urlencoded",
         "body": {
           "values": [
-            { "name": "From", "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}" },
-            { "name": "To",   "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}" },
-            { "name": "Body", "value": "❌ Por favor envía solo el *número* de la solicitud que deseas cancelar (ej: *12*)." }
+            {
+              "name": "From",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}"
+            },
+            {
+              "name": "To",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}"
+            },
+            {
+              "name": "Body",
+              "value": "❌ Por favor envía solo el *número* de la solicitud que deseas cancelar (ej: *12*)."
+            }
           ]
         },
         "options": {}
@@ -641,10 +1055,11 @@
       "name": "ENVIAR ERROR ID CANCELAR",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1960, 1400]
+      "position": [
+        1960,
+        1400
+      ]
     },
-
-    // ── ESTADO confirmar_servicio ────────────────────────────────────────────
     {
       "parameters": {
         "jsCode": "const msg = ($('NORMALIZAR TELEFONO').item.json.mensaje || '').trim().toLowerCase();\nconst si = ['si', 'sí', 's', 'yes', '1'].includes(msg);\nconst no = ['no', 'n', '2'].includes(msg);\nconst datos = $('OBTENER CONTEXTO').item.json.sesion_datos || {};\nreturn { confirmado: si, rechazado: no, solicitud_id: datos.solicitud_id, valido: si || no };"
@@ -653,21 +1068,42 @@
       "name": "PARSEAR CONFIRMACION",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1520, 1600]
+      "position": [
+        1520,
+        1600
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
-          "conditions": [{ "leftValue": "={{ $json.valido }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" }, "id": "c2" }],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.valido }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "id": "c2"
+            }
+          ],
           "combinator": "and"
         }
       },
       "id": "node-061",
       "name": "ES CONFIRMACION VALIDA",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [1740, 1600]
+      "typeVersion": 2.2,
+      "position": [
+        1740,
+        1600
+      ]
     },
     {
       "parameters": {
@@ -677,9 +1113,18 @@
         "contentType": "json",
         "body": {
           "values": [
-            { "name": "solicitud_id", "value": "={{ $('PARSEAR CONFIRMACION').item.json.solicitud_id }}" },
-            { "name": "telefono",     "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono }}" },
-            { "name": "confirmado",   "value": "={{ $('PARSEAR CONFIRMACION').item.json.confirmado }}" }
+            {
+              "name": "solicitud_id",
+              "value": "={{ $('PARSEAR CONFIRMACION').item.json.solicitud_id }}"
+            },
+            {
+              "name": "telefono",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono }}"
+            },
+            {
+              "name": "confirmado",
+              "value": "={{ $('PARSEAR CONFIRMACION').item.json.confirmado }}"
+            }
           ]
         },
         "options": {}
@@ -688,7 +1133,10 @@
       "name": "EJECUTAR CONFIRMACION",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1960, 1600]
+      "position": [
+        1960,
+        1600
+      ]
     },
     {
       "parameters": {
@@ -698,7 +1146,10 @@
       "name": "ARMAR MSG CONFIRMACION",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2180, 1600]
+      "position": [
+        2180,
+        1600
+      ]
     },
     {
       "parameters": {
@@ -710,9 +1161,18 @@
         "contentType": "form-urlencoded",
         "body": {
           "values": [
-            { "name": "From", "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}" },
-            { "name": "To",   "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}" },
-            { "name": "Body", "value": "={{ $json.mensaje }}" }
+            {
+              "name": "From",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}"
+            },
+            {
+              "name": "To",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}"
+            },
+            {
+              "name": "Body",
+              "value": "={{ $json.mensaje }}"
+            }
           ]
         },
         "options": {}
@@ -721,7 +1181,10 @@
       "name": "ENVIAR RESULTADO CONFIRMACION",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [2400, 1600]
+      "position": [
+        2400,
+        1600
+      ]
     },
     {
       "parameters": {
@@ -733,9 +1196,18 @@
         "contentType": "form-urlencoded",
         "body": {
           "values": [
-            { "name": "From", "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}" },
-            { "name": "To",   "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}" },
-            { "name": "Body", "value": "Por favor responde *SI* para confirmar o *NO* para rechazar el servicio." }
+            {
+              "name": "From",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}"
+            },
+            {
+              "name": "To",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}"
+            },
+            {
+              "name": "Body",
+              "value": "Por favor responde *SI* para confirmar o *NO* para rechazar el servicio."
+            }
           ]
         },
         "options": {}
@@ -744,10 +1216,11 @@
       "name": "PEDIR CONFIRMACION NUEVA",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1960, 1800]
+      "position": [
+        1960,
+        1800
+      ]
     },
-
-    // ── ESTADO encuesta ──────────────────────────────────────────────────────
     {
       "parameters": {
         "jsCode": "const msg = ($('NORMALIZAR TELEFONO').item.json.mensaje || '').trim();\nconst num = parseInt(msg);\nconst valido = num >= 1 && num <= 5;\nconst datos = $('OBTENER CONTEXTO').item.json.sesion_datos || {};\nreturn { calificacion: num, valido, solicitud_id: datos.solicitud_id };"
@@ -756,21 +1229,42 @@
       "name": "PARSEAR ENCUESTA",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1520, 2000]
+      "position": [
+        1520,
+        2000
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
-          "conditions": [{ "leftValue": "={{ $json.valido }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" }, "id": "c3" }],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.valido }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "id": "c3"
+            }
+          ],
           "combinator": "and"
         }
       },
       "id": "node-071",
       "name": "ES CALIFICACION VALIDA",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [1740, 2000]
+      "typeVersion": 2.2,
+      "position": [
+        1740,
+        2000
+      ]
     },
     {
       "parameters": {
@@ -780,9 +1274,18 @@
         "contentType": "json",
         "body": {
           "values": [
-            { "name": "solicitud_id", "value": "={{ $('PARSEAR ENCUESTA').item.json.solicitud_id }}" },
-            { "name": "calificacion", "value": "={{ $('PARSEAR ENCUESTA').item.json.calificacion }}" },
-            { "name": "telefono",     "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono }}" }
+            {
+              "name": "solicitud_id",
+              "value": "={{ $('PARSEAR ENCUESTA').item.json.solicitud_id }}"
+            },
+            {
+              "name": "calificacion",
+              "value": "={{ $('PARSEAR ENCUESTA').item.json.calificacion }}"
+            },
+            {
+              "name": "telefono",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono }}"
+            }
           ]
         },
         "options": {}
@@ -791,7 +1294,10 @@
       "name": "GUARDAR ENCUESTA",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1960, 2000]
+      "position": [
+        1960,
+        2000
+      ]
     },
     {
       "parameters": {
@@ -803,9 +1309,18 @@
         "contentType": "form-urlencoded",
         "body": {
           "values": [
-            { "name": "From", "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}" },
-            { "name": "To",   "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}" },
-            { "name": "Body", "value": "=✅ ¡Gracias por tu calificación de *{{ $('PARSEAR ENCUESTA').item.json.calificacion }} estrella{{ $('PARSEAR ENCUESTA').item.json.calificacion > 1 ? 's' : '' }}*! Tu opinión nos ayuda a mejorar el servicio. 🙏" }
+            {
+              "name": "From",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}"
+            },
+            {
+              "name": "To",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}"
+            },
+            {
+              "name": "Body",
+              "value": "=✅ ¡Gracias por tu calificación de *{{ $('PARSEAR ENCUESTA').item.json.calificacion }} estrella{{ $('PARSEAR ENCUESTA').item.json.calificacion > 1 ? 's' : '' }}*! Tu opinión nos ayuda a mejorar el servicio. 🙏"
+            }
           ]
         },
         "options": {}
@@ -814,7 +1329,10 @@
       "name": "ENVIAR GRACIAS ENCUESTA",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [2180, 2000]
+      "position": [
+        2180,
+        2000
+      ]
     },
     {
       "parameters": {
@@ -826,9 +1344,18 @@
         "contentType": "form-urlencoded",
         "body": {
           "values": [
-            { "name": "From", "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}" },
-            { "name": "To",   "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}" },
-            { "name": "Body", "value": "Por favor califica el servicio con un número del *1 al 5*:\n1 - Muy malo  2 - Malo  3 - Regular  4 - Bueno  5 - Excelente" }
+            {
+              "name": "From",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}"
+            },
+            {
+              "name": "To",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}"
+            },
+            {
+              "name": "Body",
+              "value": "Por favor califica el servicio con un número del *1 al 5*:\n1 - Muy malo  2 - Malo  3 - Regular  4 - Bueno  5 - Excelente"
+            }
           ]
         },
         "options": {}
@@ -837,10 +1364,11 @@
       "name": "PEDIR CALIFICACION NUEVA",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1960, 2200]
+      "position": [
+        1960,
+        2200
+      ]
     },
-
-    // ── HERRAMIENTA COMPARTIDA: Consultar base de conocimiento ─────────────
     {
       "parameters": {
         "name": "consultar_info",
@@ -852,8 +1380,11 @@
       "id": "node-100",
       "name": "TOOL consultar_info CONDUCTOR",
       "type": "n8n-nodes-base.httpRequestTool",
-      "typeVersion": 1,
-      "position": [2180, -100]
+      "typeVersion": 4.2,
+      "position": [
+        2180,
+        -100
+      ]
     },
     {
       "parameters": {
@@ -866,11 +1397,12 @@
       "id": "node-101",
       "name": "TOOL consultar_info SOLICITAR",
       "type": "n8n-nodes-base.httpRequestTool",
-      "typeVersion": 1,
-      "position": [2840, 200]
+      "typeVersion": 4.2,
+      "position": [
+        2840,
+        200
+      ]
     },
-
-    // ── USUARIO NO REGISTRADO ────────────────────────────────────────────────
     {
       "parameters": {
         "method": "POST",
@@ -881,9 +1413,18 @@
         "contentType": "form-urlencoded",
         "body": {
           "values": [
-            { "name": "From", "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}" },
-            { "name": "To",   "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}" },
-            { "name": "Body", "value": "Lo sentimos, tu número no está registrado en el sistema de transporte de la Alcaldía de Sopó.\n\nComunícate con la administradora para registrarte." }
+            {
+              "name": "From",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.numero_from }}"
+            },
+            {
+              "name": "To",
+              "value": "={{ $('NORMALIZAR TELEFONO').item.json.telefono_raw }}"
+            },
+            {
+              "name": "Body",
+              "value": "Lo sentimos, tu número no está registrado en el sistema de transporte de la Alcaldía de Sopó.\n\nComunícate con la administradora para registrarte."
+            }
           ]
         },
         "options": {}
@@ -892,95 +1433,492 @@
       "name": "MSG NO REGISTRADO",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1300, 600]
+      "position": [
+        1300,
+        600
+      ]
     }
   ],
-
   "connections": {
-    "WEBHOOK TWILIO":          { "main": [[{ "node": "EXTRAER DATOS",         "type": "main", "index": 0 }]] },
-    "EXTRAER DATOS":           { "main": [[{ "node": "NORMALIZAR TELEFONO",   "type": "main", "index": 0 }]] },
-    "NORMALIZAR TELEFONO":     { "main": [[{ "node": "OBTENER CONTEXTO",      "type": "main", "index": 0 }]] },
-    "OBTENER CONTEXTO":        { "main": [[{ "node": "TIPO USUARIO",          "type": "main", "index": 0 }]] },
-
+    "WEBHOOK TWILIO": {
+      "main": [
+        [
+          {
+            "node": "EXTRAER DATOS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EXTRAER DATOS": {
+      "main": [
+        [
+          {
+            "node": "NORMALIZAR TELEFONO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NORMALIZAR TELEFONO": {
+      "main": [
+        [
+          {
+            "node": "OBTENER CONTEXTO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OBTENER CONTEXTO": {
+      "main": [
+        [
+          {
+            "node": "TIPO USUARIO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "TIPO USUARIO": {
       "main": [
-        [{ "node": "AI AGENT CONDUCTOR", "type": "main", "index": 0 }],
-        [{ "node": "ESTADO SESION",       "type": "main", "index": 0 }],
-        [{ "node": "MSG NO REGISTRADO",   "type": "main", "index": 0 }]
+        [
+          {
+            "node": "AI AGENT CONDUCTOR",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ESTADO SESION",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MSG NO REGISTRADO",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-
     "ESTADO SESION": {
       "main": [
-        [{ "node": "AI AGENT SOLICITAR",    "type": "main", "index": 0 }],
-        [{ "node": "PARSEAR ID CANCELAR",   "type": "main", "index": 0 }],
-        [{ "node": "PARSEAR CONFIRMACION",  "type": "main", "index": 0 }],
-        [{ "node": "PARSEAR ENCUESTA",      "type": "main", "index": 0 }],
-        [{ "node": "OPCION MENU",           "type": "main", "index": 0 }]
+        [
+          {
+            "node": "AI AGENT SOLICITAR",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PARSEAR ID CANCELAR",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PARSEAR CONFIRMACION",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PARSEAR ENCUESTA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "OPCION MENU",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-
     "OPCION MENU": {
       "main": [
-        [{ "node": "INICIAR SESION SOLICITUD", "type": "main", "index": 0 }],
-        [{ "node": "OBTENER SOLICITUDES",      "type": "main", "index": 0 }],
-        [{ "node": "ACTIVAR ESTADO CANCELAR",  "type": "main", "index": 0 }],
-        [{ "node": "ENVIAR MENU",              "type": "main", "index": 0 }]
+        [
+          {
+            "node": "INICIAR SESION SOLICITUD",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "OBTENER SOLICITUDES",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ACTIVAR ESTADO CANCELAR",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ENVIAR MENU",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-
-    "INICIAR SESION SOLICITUD": { "main": [[{ "node": "AI AGENT SOLICITAR", "type": "main", "index": 0 }]] },
-    "AI AGENT SOLICITAR":       { "main": [[{ "node": "ENVIAR RESPUESTA SOLICITAR", "type": "main", "index": 0 }]] },
-    "AI AGENT CONDUCTOR":       { "main": [[{ "node": "ENVIAR RESPUESTA CONDUCTOR", "type": "main", "index": 0 }]] },
-
-    "OBTENER SOLICITUDES":  { "main": [[{ "node": "FORMATEAR SOLICITUDES", "type": "main", "index": 0 }]] },
-    "FORMATEAR SOLICITUDES":{ "main": [[{ "node": "ENVIAR CONSULTA",       "type": "main", "index": 0 }]] },
-
-    "ACTIVAR ESTADO CANCELAR": { "main": [[{ "node": "PEDIR ID CANCELAR", "type": "main", "index": 0 }]] },
-
-    "PARSEAR ID CANCELAR":  { "main": [[{ "node": "ES ID VALIDO", "type": "main", "index": 0 }]] },
+    "INICIAR SESION SOLICITUD": {
+      "main": [
+        [
+          {
+            "node": "AI AGENT SOLICITAR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI AGENT SOLICITAR": {
+      "main": [
+        [
+          {
+            "node": "ENVIAR RESPUESTA SOLICITAR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI AGENT CONDUCTOR": {
+      "main": [
+        [
+          {
+            "node": "ENVIAR RESPUESTA CONDUCTOR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OBTENER SOLICITUDES": {
+      "main": [
+        [
+          {
+            "node": "FORMATEAR SOLICITUDES",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FORMATEAR SOLICITUDES": {
+      "main": [
+        [
+          {
+            "node": "ENVIAR CONSULTA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ACTIVAR ESTADO CANCELAR": {
+      "main": [
+        [
+          {
+            "node": "PEDIR ID CANCELAR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PARSEAR ID CANCELAR": {
+      "main": [
+        [
+          {
+            "node": "ES ID VALIDO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "ES ID VALIDO": {
       "main": [
-        [{ "node": "EJECUTAR CANCELACION",  "type": "main", "index": 0 }],
-        [{ "node": "ENVIAR ERROR ID CANCELAR", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "EJECUTAR CANCELACION",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ENVIAR ERROR ID CANCELAR",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "EJECUTAR CANCELACION": { "main": [[{ "node": "ENVIAR RESULTADO CANCELAR", "type": "main", "index": 0 }]] },
-
-    "PARSEAR CONFIRMACION": { "main": [[{ "node": "ES CONFIRMACION VALIDA", "type": "main", "index": 0 }]] },
+    "EJECUTAR CANCELACION": {
+      "main": [
+        [
+          {
+            "node": "ENVIAR RESULTADO CANCELAR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PARSEAR CONFIRMACION": {
+      "main": [
+        [
+          {
+            "node": "ES CONFIRMACION VALIDA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "ES CONFIRMACION VALIDA": {
       "main": [
-        [{ "node": "EJECUTAR CONFIRMACION", "type": "main", "index": 0 }],
-        [{ "node": "PEDIR CONFIRMACION NUEVA", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "EJECUTAR CONFIRMACION",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PEDIR CONFIRMACION NUEVA",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "EJECUTAR CONFIRMACION": { "main": [[{ "node": "ARMAR MSG CONFIRMACION", "type": "main", "index": 0 }]] },
-    "ARMAR MSG CONFIRMACION":{ "main": [[{ "node": "ENVIAR RESULTADO CONFIRMACION", "type": "main", "index": 0 }]] },
-
-    "PARSEAR ENCUESTA": { "main": [[{ "node": "ES CALIFICACION VALIDA", "type": "main", "index": 0 }]] },
+    "EJECUTAR CONFIRMACION": {
+      "main": [
+        [
+          {
+            "node": "ARMAR MSG CONFIRMACION",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ARMAR MSG CONFIRMACION": {
+      "main": [
+        [
+          {
+            "node": "ENVIAR RESULTADO CONFIRMACION",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PARSEAR ENCUESTA": {
+      "main": [
+        [
+          {
+            "node": "ES CALIFICACION VALIDA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "ES CALIFICACION VALIDA": {
       "main": [
-        [{ "node": "GUARDAR ENCUESTA",     "type": "main", "index": 0 }],
-        [{ "node": "PEDIR CALIFICACION NUEVA", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "GUARDAR ENCUESTA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PEDIR CALIFICACION NUEVA",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "GUARDAR ENCUESTA": { "main": [[{ "node": "ENVIAR GRACIAS ENCUESTA", "type": "main", "index": 0 }]] },
-
-    "OpenAI Conductor":  { "ai_languageModel": [[{ "node": "AI AGENT CONDUCTOR", "type": "ai_languageModel", "index": 0 }]] },
-    "Memoria Conductor": { "ai_memory":        [[{ "node": "AI AGENT CONDUCTOR", "type": "ai_memory",        "index": 0 }]] },
-    "TOOL ver_servicios":     { "ai_tool": [[{ "node": "AI AGENT CONDUCTOR", "type": "ai_tool", "index": 0 }]] },
-    "TOOL iniciar_servicio":  { "ai_tool": [[{ "node": "AI AGENT CONDUCTOR", "type": "ai_tool", "index": 0 }]] },
-    "TOOL finalizar_servicio":{ "ai_tool": [[{ "node": "AI AGENT CONDUCTOR", "type": "ai_tool", "index": 0 }]] },
-    "TOOL consultar_info CONDUCTOR": { "ai_tool": [[{ "node": "AI AGENT CONDUCTOR", "type": "ai_tool", "index": 0 }]] },
-
-    "OpenAI Solicitar":  { "ai_languageModel": [[{ "node": "AI AGENT SOLICITAR", "type": "ai_languageModel", "index": 0 }]] },
-    "Memoria Solicitar": { "ai_memory":        [[{ "node": "AI AGENT SOLICITAR", "type": "ai_memory",        "index": 0 }]] },
-    "TOOL obtener_dependencias": { "ai_tool": [[{ "node": "AI AGENT SOLICITAR", "type": "ai_tool", "index": 0 }]] },
-    "TOOL crear_solicitud":      { "ai_tool": [[{ "node": "AI AGENT SOLICITAR", "type": "ai_tool", "index": 0 }]] },
-    "TOOL cancelar_flujo":       { "ai_tool": [[{ "node": "AI AGENT SOLICITAR", "type": "ai_tool", "index": 0 }]] },
-    "TOOL consultar_info SOLICITAR": { "ai_tool": [[{ "node": "AI AGENT SOLICITAR", "type": "ai_tool", "index": 0 }]] }
+    "GUARDAR ENCUESTA": {
+      "main": [
+        [
+          {
+            "node": "ENVIAR GRACIAS ENCUESTA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Conductor": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI AGENT CONDUCTOR",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memoria Conductor": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI AGENT CONDUCTOR",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TOOL ver_servicios": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI AGENT CONDUCTOR",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TOOL iniciar_servicio": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI AGENT CONDUCTOR",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TOOL finalizar_servicio": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI AGENT CONDUCTOR",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TOOL consultar_info CONDUCTOR": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI AGENT CONDUCTOR",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Solicitar": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI AGENT SOLICITAR",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memoria Solicitar": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI AGENT SOLICITAR",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TOOL obtener_dependencias": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI AGENT SOLICITAR",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TOOL crear_solicitud": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI AGENT SOLICITAR",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TOOL cancelar_flujo": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI AGENT SOLICITAR",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TOOL consultar_info SOLICITAR": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI AGENT SOLICITAR",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-
   "active": false,
-  "settings": { "executionOrder": "v1" }
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": "",
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "tags": [],
+  "versionId": ""
 }

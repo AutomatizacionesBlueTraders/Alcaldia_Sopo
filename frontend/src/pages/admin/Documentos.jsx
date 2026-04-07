@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { DocumentTextIcon, PlusIcon, FunnelIcon, PencilSquareIcon, PhotoIcon, InboxIcon } from '@heroicons/react/24/outline';
 import api from '../../api/axios';
 import Modal from '../../components/Modal';
 
@@ -87,20 +88,30 @@ export default function Documentos() {
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">Documentos</h2>
-        <button onClick={() => setModal(true)} className="bg-primary-600 text-white px-4 py-2 rounded text-sm hover:bg-primary-700">+ Nuevo</button>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="page-title flex items-center gap-2">
+            <DocumentTextIcon className="w-6 h-6 text-primary-600" />
+            Documentos
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">SOAT, seguros y tecnomecanica de vehiculos</p>
+        </div>
+        <button onClick={() => setModal(true)} className="btn-primary">
+          <PlusIcon className="w-4 h-4" />
+          Nuevo
+        </button>
       </div>
 
-      <div className="flex gap-3 mb-4">
-        <select value={filtro.tipo} onChange={e => setFiltro({...filtro, tipo: e.target.value})} className="border rounded px-3 py-1.5 text-sm">
+      <div className="flex gap-3 items-center">
+        <FunnelIcon className="w-4 h-4 text-gray-400" />
+        <select value={filtro.tipo} onChange={e => setFiltro({...filtro, tipo: e.target.value})} className="input-field w-auto">
           <option value="">Todos los tipos</option>
           <option value="soat">SOAT</option>
           <option value="seguro">Seguro</option>
-          <option value="tecnomecanica">Tecnomecánica</option>
+          <option value="tecnomecanica">Tecnomecanica</option>
         </select>
-        <select value={filtro.estado} onChange={e => setFiltro({...filtro, estado: e.target.value})} className="border rounded px-3 py-1.5 text-sm">
+        <select value={filtro.estado} onChange={e => setFiltro({...filtro, estado: e.target.value})} className="input-field w-auto">
           <option value="">Todos</option>
           <option value="vigente">Vigente</option>
           <option value="por_vencer">Por vencer</option>
@@ -108,41 +119,52 @@ export default function Documentos() {
         </select>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+      <div className="card overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-left text-gray-500">
+          <thead className="table-header">
             <tr>
-              <th className="px-4 py-2">Placa</th>
-              <th className="px-4 py-2">Tipo</th>
-              <th className="px-4 py-2">Expedición</th>
-              <th className="px-4 py-2">Vencimiento</th>
-              <th className="px-4 py-2">Estado</th>
-              <th className="px-4 py-2">Soporte</th>
-              <th className="px-4 py-2"></th>
+              <th className="table-cell">Placa</th>
+              <th className="table-cell">Tipo</th>
+              <th className="table-cell">Expedicion</th>
+              <th className="table-cell">Vencimiento</th>
+              <th className="table-cell">Estado</th>
+              <th className="table-cell">Soporte</th>
+              <th className="table-cell"></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="7" className="px-4 py-6 text-center text-gray-400">Cargando...</td></tr>
+              <tr><td colSpan="7" className="px-5 py-8 text-center">
+                <div className="animate-spin w-6 h-6 border-4 border-primary-200 border-t-primary-600 rounded-full mx-auto" />
+              </td></tr>
             ) : docs.length === 0 ? (
-              <tr><td colSpan="7" className="px-4 py-6 text-center text-gray-400">Sin documentos</td></tr>
+              <tr><td colSpan="7" className="px-5 py-8 text-center text-gray-400">
+                <InboxIcon className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                Sin documentos
+              </td></tr>
             ) : docs.map(d => (
-              <tr key={d.id} className="border-t hover:bg-gray-50">
-                <td className="px-4 py-2 font-medium">{d.placa}</td>
-                <td className="px-4 py-2 uppercase text-xs">{d.tipo}</td>
-                <td className="px-4 py-2">{d.fecha_expedicion?.substring(0, 10)}</td>
-                <td className="px-4 py-2">{d.fecha_vencimiento?.substring(0, 10)}</td>
-                <td className="px-4 py-2"><span className={`text-xs px-2 py-0.5 rounded ${semaforo(d.estado)}`}>{d.estado}</span></td>
-                <td className="px-4 py-2">
+              <tr key={d.id} className="table-row">
+                <td className="table-cell font-medium">{d.placa}</td>
+                <td className="table-cell uppercase text-xs">{d.tipo}</td>
+                <td className="table-cell">{d.fecha_expedicion?.substring(0, 10)}</td>
+                <td className="table-cell">{d.fecha_vencimiento?.substring(0, 10)}</td>
+                <td className="table-cell"><span className={`text-xs px-2 py-0.5 rounded-full ${semaforo(d.estado)}`}>{d.estado}</span></td>
+                <td className="table-cell">
                   {d.soporte_imagen ? (
                     <button onClick={() => setVerImagen(d.soporte_imagen)}
-                      className="text-primary-600 hover:underline text-xs">Ver imagen</button>
+                      className="inline-flex items-center gap-1 text-primary-600 hover:underline text-xs">
+                      <PhotoIcon className="w-3.5 h-3.5" />
+                      Ver imagen
+                    </button>
                   ) : (
                     <span className="text-gray-300 text-xs">Sin soporte</span>
                   )}
                 </td>
-                <td className="px-4 py-2">
-                  <button onClick={() => abrirEditar(d)} className="text-xs text-gray-500 hover:text-gray-700 border rounded px-2 py-0.5">Editar</button>
+                <td className="table-cell">
+                  <button onClick={() => abrirEditar(d)} className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-primary-600 transition-colors">
+                    <PencilSquareIcon className="w-3.5 h-3.5" />
+                    Editar
+                  </button>
                 </td>
               </tr>
             ))}
@@ -153,40 +175,40 @@ export default function Documentos() {
       {/* Modal Nuevo */}
       <Modal open={modal} onClose={() => setModal(false)} title="Nuevo Documento">
         <div className="space-y-3">
-          <select value={form.vehiculo_id} onChange={e => setForm({...form, vehiculo_id: e.target.value})} className="w-full border rounded px-3 py-2 text-sm">
-            <option value="">Seleccionar vehículo...</option>
+          <select value={form.vehiculo_id} onChange={e => setForm({...form, vehiculo_id: e.target.value})} className="input-field">
+            <option value="">Seleccionar vehiculo...</option>
             {vehiculos.map(v => <option key={v.id} value={v.id}>{v.placa} — {v.marca} {v.modelo}</option>)}
           </select>
-          <select value={form.tipo} onChange={e => setForm({...form, tipo: e.target.value})} className="w-full border rounded px-3 py-2 text-sm">
+          <select value={form.tipo} onChange={e => setForm({...form, tipo: e.target.value})} className="input-field">
             <option value="soat">SOAT</option>
             <option value="seguro">Seguro</option>
-            <option value="tecnomecanica">Tecnomecánica</option>
+            <option value="tecnomecanica">Tecnomecanica</option>
           </select>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-xs text-gray-500">Expedición</label>
+              <label className="text-xs text-gray-500">Expedicion</label>
               <input type="date" value={form.fecha_expedicion} onChange={e => setForm({...form, fecha_expedicion: e.target.value})}
-                className="w-full border rounded px-3 py-2 text-sm" />
+                className="input-field" />
             </div>
             <div>
               <label className="text-xs text-gray-500">Vencimiento *</label>
               <input type="date" value={form.fecha_vencimiento} onChange={e => setForm({...form, fecha_vencimiento: e.target.value})}
-                className="w-full border rounded px-3 py-2 text-sm" />
+                className="input-field" />
             </div>
           </div>
           <div>
             <label className="text-xs text-gray-500">Imagen del documento (opcional)</label>
             <input ref={fileRef} type="file" accept="image/*"
               onChange={e => leerArchivo(e.target.files[0], b64 => setForm({...form, soporte_imagen: b64}))}
-              className="w-full border rounded px-3 py-2 text-sm" />
+              className="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm" />
             {form.soporte_imagen && (
-              <img src={form.soporte_imagen} alt="Vista previa" className="mt-2 max-h-32 rounded border" />
+              <img src={form.soporte_imagen} alt="Vista previa" className="mt-2 max-h-32 rounded-lg border border-gray-200" />
             )}
           </div>
           <div className="flex justify-end gap-2">
-            <button onClick={() => setModal(false)} className="px-4 py-2 border rounded text-sm">Cancelar</button>
+            <button onClick={() => setModal(false)} className="btn-secondary">Cancelar</button>
             <button onClick={handleGuardar} disabled={!form.vehiculo_id || !form.fecha_vencimiento || guardando}
-              className="px-4 py-2 bg-primary-600 text-white rounded text-sm disabled:opacity-50">
+              className="btn-primary disabled:opacity-50">
               {guardando ? 'Guardando...' : 'Guardar'}
             </button>
           </div>
@@ -197,29 +219,29 @@ export default function Documentos() {
       {editForm && (
         <Modal open={editModal} onClose={() => setEditModal(false)} title="Editar Documento">
           <div className="space-y-3">
-            <select value={editForm.vehiculo_id} onChange={e => setEditForm({...editForm, vehiculo_id: parseInt(e.target.value)})} className="w-full border rounded px-3 py-2 text-sm">
+            <select value={editForm.vehiculo_id} onChange={e => setEditForm({...editForm, vehiculo_id: parseInt(e.target.value)})} className="input-field">
               {vehiculos.map(v => <option key={v.id} value={v.id}>{v.placa} — {v.marca} {v.modelo}</option>)}
             </select>
-            <select value={editForm.tipo} onChange={e => setEditForm({...editForm, tipo: e.target.value})} className="w-full border rounded px-3 py-2 text-sm">
+            <select value={editForm.tipo} onChange={e => setEditForm({...editForm, tipo: e.target.value})} className="input-field">
               <option value="soat">SOAT</option>
               <option value="seguro">Seguro</option>
-              <option value="tecnomecanica">Tecnomecánica</option>
+              <option value="tecnomecanica">Tecnomecanica</option>
             </select>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-xs text-gray-500">Expedición</label>
+                <label className="text-xs text-gray-500">Expedicion</label>
                 <input type="date" value={editForm.fecha_expedicion} onChange={e => setEditForm({...editForm, fecha_expedicion: e.target.value})}
-                  className="w-full border rounded px-3 py-2 text-sm" />
+                  className="input-field" />
               </div>
               <div>
                 <label className="text-xs text-gray-500">Vencimiento *</label>
                 <input type="date" value={editForm.fecha_vencimiento} onChange={e => setEditForm({...editForm, fecha_vencimiento: e.target.value})}
-                  className="w-full border rounded px-3 py-2 text-sm" />
+                  className="input-field" />
               </div>
             </div>
             <div>
               <label className="text-xs text-gray-500">Estado</label>
-              <select value={editForm.estado} onChange={e => setEditForm({...editForm, estado: e.target.value})} className="w-full border rounded px-3 py-2 text-sm">
+              <select value={editForm.estado} onChange={e => setEditForm({...editForm, estado: e.target.value})} className="input-field">
                 <option value="vigente">Vigente</option>
                 <option value="por_vencer">Por vencer</option>
                 <option value="vencido">Vencido</option>
@@ -229,9 +251,9 @@ export default function Documentos() {
               <label className="text-xs text-gray-500">Imagen del documento</label>
               <input ref={editFileRef} type="file" accept="image/*"
                 onChange={e => leerArchivo(e.target.files[0], b64 => setEditForm({...editForm, soporte_imagen: b64}))}
-                className="w-full border rounded px-3 py-2 text-sm" />
+                className="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm" />
               {editForm.soporte_imagen && (
-                <img src={editForm.soporte_imagen} alt="Vista previa" className="mt-2 max-h-32 rounded border" />
+                <img src={editForm.soporte_imagen} alt="Vista previa" className="mt-2 max-h-32 rounded-lg border border-gray-200" />
               )}
               {editForm.soporte_imagen && (
                 <button onClick={() => setEditForm({...editForm, soporte_imagen: ''})}
@@ -239,9 +261,9 @@ export default function Documentos() {
               )}
             </div>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setEditModal(false)} className="px-4 py-2 border rounded text-sm">Cancelar</button>
+              <button onClick={() => setEditModal(false)} className="btn-secondary">Cancelar</button>
               <button onClick={handleActualizar} disabled={!editForm.fecha_vencimiento || guardando}
-                className="px-4 py-2 bg-primary-600 text-white rounded text-sm disabled:opacity-50">
+                className="btn-primary disabled:opacity-50">
                 {guardando ? 'Guardando...' : 'Actualizar'}
               </button>
             </div>
@@ -253,7 +275,7 @@ export default function Documentos() {
       <Modal open={!!verImagen} onClose={() => setVerImagen(null)} title="Soporte del documento">
         {verImagen && (
           <div className="text-center">
-            <img src={verImagen} alt="Soporte" className="max-w-full max-h-96 mx-auto rounded border" />
+            <img src={verImagen} alt="Soporte" className="max-w-full max-h-96 mx-auto rounded-lg border border-gray-200" />
             <a href={verImagen} download="soporte_documento.png"
               className="mt-3 inline-block text-sm text-primary-600 hover:underline">Descargar imagen</a>
           </div>

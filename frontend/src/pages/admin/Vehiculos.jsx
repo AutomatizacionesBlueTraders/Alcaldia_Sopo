@@ -2,8 +2,16 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 import Modal from '../../components/Modal';
+import { PlusIcon, TruckIcon, PencilSquareIcon, TrashIcon, FunnelIcon } from '@heroicons/react/24/outline';
 
 const ESTADOS = ['disponible', 'en_servicio', 'mantenimiento', 'inactivo'];
+
+const ESTADO_BADGE = {
+  disponible: 'bg-green-50 text-green-700 ring-green-200',
+  en_servicio: 'bg-blue-50 text-blue-700 ring-blue-200',
+  mantenimiento: 'bg-amber-50 text-amber-700 ring-amber-200',
+  inactivo: 'bg-gray-100 text-gray-600 ring-gray-200',
+};
 
 export default function Vehiculos() {
   const [vehiculos, setVehiculos] = useState([]);
@@ -55,57 +63,80 @@ export default function Vehiculos() {
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">Vehículos</h2>
-        <button onClick={abrirCrear} className="bg-primary-600 text-white px-4 py-2 rounded text-sm hover:bg-primary-700">+ Nuevo</button>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="page-title">Vehículos</h2>
+          <p className="text-gray-500 text-sm mt-1">{vehiculos.length} vehículos registrados</p>
+        </div>
+        <button onClick={abrirCrear} className="btn-primary">
+          <PlusIcon className="w-4 h-4" />
+          Nuevo Vehículo
+        </button>
       </div>
 
-      <div className="flex gap-3 mb-4">
-        <select value={filtro.tipo} onChange={e => setFiltro({...filtro, tipo: e.target.value})} className="border rounded px-3 py-1.5 text-sm">
+      {/* Filtros */}
+      <div className="flex flex-wrap items-center gap-3">
+        <FunnelIcon className="w-4 h-4 text-gray-400" />
+        <select value={filtro.tipo} onChange={e => setFiltro({...filtro, tipo: e.target.value})} className="input-field w-auto min-w-[150px]">
           <option value="">Todos los tipos</option>
           <option value="vehiculo">Vehículo</option>
           <option value="maquinaria">Maquinaria</option>
         </select>
-        <select value={filtro.estado} onChange={e => setFiltro({...filtro, estado: e.target.value})} className="border rounded px-3 py-1.5 text-sm">
+        <select value={filtro.estado} onChange={e => setFiltro({...filtro, estado: e.target.value})} className="input-field w-auto min-w-[160px]">
           <option value="">Todos los estados</option>
           {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
         </select>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+      {/* Tabla */}
+      <div className="card overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-left text-gray-500">
+          <thead className="table-header">
             <tr>
-              <th className="px-4 py-2">Placa</th>
-              <th className="px-4 py-2">Tipo</th>
-              <th className="px-4 py-2">Marca</th>
-              <th className="px-4 py-2">Modelo</th>
-              <th className="px-4 py-2">Año</th>
-              <th className="px-4 py-2">Estado</th>
-              <th className="px-4 py-2">KM</th>
-              <th className="px-4 py-2">Acciones</th>
+              <th className="table-cell">Placa</th>
+              <th className="table-cell">Tipo</th>
+              <th className="table-cell">Marca</th>
+              <th className="table-cell">Modelo</th>
+              <th className="table-cell">Año</th>
+              <th className="table-cell">Estado</th>
+              <th className="table-cell">KM</th>
+              <th className="table-cell text-right">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="8" className="px-4 py-6 text-center text-gray-400">Cargando...</td></tr>
+              <tr><td colSpan="8" className="px-5 py-10 text-center">
+                <div className="animate-spin w-6 h-6 border-4 border-primary-200 border-t-primary-600 rounded-full mx-auto" />
+              </td></tr>
+            ) : vehiculos.length === 0 ? (
+              <tr><td colSpan="8" className="px-5 py-10 text-center text-gray-400">
+                <TruckIcon className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                No hay vehículos
+              </td></tr>
             ) : vehiculos.map(v => (
-              <tr key={v.id} className="border-t hover:bg-gray-50">
-                <td className="px-4 py-2 font-medium">
-                  <Link to={`/admin/vehiculos/${v.id}`} className="text-primary-600 hover:underline">{v.placa}</Link>
+              <tr key={v.id} className="table-row">
+                <td className="table-cell">
+                  <Link to={`/admin/vehiculos/${v.id}`} className="font-mono font-semibold text-primary-600 hover:text-primary-700">{v.placa}</Link>
                 </td>
-                <td className="px-4 py-2 text-xs">{v.tipo}</td>
-                <td className="px-4 py-2">{v.marca}</td>
-                <td className="px-4 py-2 text-xs">{v.modelo}</td>
-                <td className="px-4 py-2">{v.anio}</td>
-                <td className="px-4 py-2">
-                  <span className={`text-xs px-2 py-0.5 rounded ${v.estado === 'disponible' ? 'bg-green-100 text-green-700' : v.estado === 'mantenimiento' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'}`}>{v.estado}</span>
+                <td className="table-cell capitalize text-xs">{v.tipo}</td>
+                <td className="table-cell">{v.marca}</td>
+                <td className="table-cell text-xs text-gray-500">{v.modelo}</td>
+                <td className="table-cell">{v.anio}</td>
+                <td className="table-cell">
+                  <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ring-1 ring-inset ${ESTADO_BADGE[v.estado] || 'bg-gray-100 text-gray-600 ring-gray-200'}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${v.estado === 'disponible' ? 'bg-green-500' : v.estado === 'en_servicio' ? 'bg-blue-500' : v.estado === 'mantenimiento' ? 'bg-amber-500' : 'bg-gray-400'}`} />
+                    {v.estado}
+                  </span>
                 </td>
-                <td className="px-4 py-2">{parseFloat(v.km_actual || 0).toLocaleString()}</td>
-                <td className="px-4 py-2">
-                  <button onClick={() => abrirEditar(v)} className="text-primary-600 hover:underline text-xs mr-2">Editar</button>
-                  <button onClick={() => handleDesactivar(v.id)} className="text-red-500 hover:underline text-xs">Desactivar</button>
+                <td className="table-cell font-mono text-xs">{parseFloat(v.km_actual || 0).toLocaleString()}</td>
+                <td className="table-cell text-right">
+                  <button onClick={() => abrirEditar(v)} className="p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors mr-1" title="Editar">
+                    <PencilSquareIcon className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => handleDesactivar(v.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="Desactivar">
+                    <TrashIcon className="w-4 h-4" />
+                  </button>
                 </td>
               </tr>
             ))}
@@ -114,31 +145,48 @@ export default function Vehiculos() {
       </div>
 
       <Modal open={modal} onClose={() => setModal(false)} title={editando ? 'Editar Vehículo' : 'Nuevo Vehículo'}>
-        <div className="space-y-3">
-          <input type="text" placeholder="Placa" value={form.placa} onChange={e => setForm({...form, placa: e.target.value})}
-            className="w-full border rounded px-3 py-2 text-sm" disabled={!!editando} />
-          <select value={form.tipo} onChange={e => setForm({...form, tipo: e.target.value})} className="w-full border rounded px-3 py-2 text-sm">
-            <option value="vehiculo">Vehículo</option>
-            <option value="maquinaria">Maquinaria</option>
-          </select>
-          <div className="grid grid-cols-2 gap-2">
-            <input type="text" placeholder="Marca" value={form.marca} onChange={e => setForm({...form, marca: e.target.value})}
-              className="border rounded px-3 py-2 text-sm" />
-            <input type="text" placeholder="Modelo" value={form.modelo} onChange={e => setForm({...form, modelo: e.target.value})}
-              className="border rounded px-3 py-2 text-sm" />
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Placa</label>
+            <input type="text" placeholder="ABC-123" value={form.placa} onChange={e => setForm({...form, placa: e.target.value})}
+              className="input-field font-mono uppercase" disabled={!!editando} />
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            <input type="number" placeholder="Año" value={form.anio} onChange={e => setForm({...form, anio: e.target.value})}
-              className="border rounded px-3 py-2 text-sm" />
-            <select value={form.estado} onChange={e => setForm({...form, estado: e.target.value})} className="border rounded px-3 py-2 text-sm">
-              {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Tipo</label>
+            <select value={form.tipo} onChange={e => setForm({...form, tipo: e.target.value})} className="input-field">
+              <option value="vehiculo">Vehículo</option>
+              <option value="maquinaria">Maquinaria</option>
             </select>
-            <input type="number" placeholder="KM actual" value={form.km_actual} onChange={e => setForm({...form, km_actual: e.target.value})}
-              className="border rounded px-3 py-2 text-sm" />
           </div>
-          <div className="flex justify-end gap-2">
-            <button onClick={() => setModal(false)} className="px-4 py-2 border rounded text-sm">Cancelar</button>
-            <button onClick={handleGuardar} className="px-4 py-2 bg-primary-600 text-white rounded text-sm">Guardar</button>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Marca</label>
+              <input type="text" placeholder="Toyota" value={form.marca} onChange={e => setForm({...form, marca: e.target.value})} className="input-field" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Modelo</label>
+              <input type="text" placeholder="Hilux" value={form.modelo} onChange={e => setForm({...form, modelo: e.target.value})} className="input-field" />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Año</label>
+              <input type="number" placeholder="2024" value={form.anio} onChange={e => setForm({...form, anio: e.target.value})} className="input-field" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Estado</label>
+              <select value={form.estado} onChange={e => setForm({...form, estado: e.target.value})} className="input-field">
+                {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">KM actual</label>
+              <input type="number" value={form.km_actual} onChange={e => setForm({...form, km_actual: e.target.value})} className="input-field" />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <button onClick={() => setModal(false)} className="btn-secondary">Cancelar</button>
+            <button onClick={handleGuardar} className="btn-primary">Guardar</button>
           </div>
         </div>
       </Modal>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { ClipboardDocumentListIcon, CalendarDaysIcon, ArrowPathIcon, XCircleIcon, NoSymbolIcon, ClockIcon } from '@heroicons/react/24/outline';
 import api from '../../api/axios';
 import EstadoBadge from '../../components/EstadoBadge';
 import Modal from '../../components/Modal';
@@ -10,14 +11,14 @@ export default function DetalleSolicitudAdmin() {
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState('');
 
-  // Programación
+  // Programacion
   const [progModal, setProgModal] = useState(false);
   const [vehiculos, setVehiculos] = useState([]);
   const [conductores, setConductores] = useState([]);
   const [progForm, setProgForm] = useState({ vehiculo_id: '', conductor_id: '', fecha: '', hora_inicio: '', hora_fin: '' });
   const [progLoading, setProgLoading] = useState(false);
 
-  // Reprogramación
+  // Reprogramacion
   const [reprogModal, setReprogModal] = useState(false);
   const [reprogForm, setReprogForm] = useState({ vehiculo_id: '', conductor_id: '', fecha: '', hora_inicio: '', hora_fin: '' });
   const [reprogVehiculos, setReprogVehiculos] = useState([]);
@@ -150,22 +151,32 @@ export default function DetalleSolicitudAdmin() {
     finally { setActionLoading(false); }
   }
 
-  if (loading) return <p className="text-gray-500">Cargando...</p>;
+  if (loading) return (
+    <div className="flex items-center justify-center py-12">
+      <div className="animate-spin w-6 h-6 border-4 border-primary-200 border-t-primary-600 rounded-full mx-auto" />
+    </div>
+  );
   if (!sol) return <p className="text-red-500">No encontrada</p>;
 
   const puedeProgramar = ['ENVIADA', 'PENDIENTE_PROGRAMACION'].includes(sol.estado);
   const puedeReprogramar = ['PROGRAMADA', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA', 'EN_EJECUCION'].includes(sol.estado) && sol.asignacion;
 
   return (
-    <div className="max-w-3xl mx-auto">
-      {msg && <div className="bg-green-50 text-green-700 p-3 rounded text-sm mb-4">{msg}</div>}
+    <div className="max-w-3xl mx-auto space-y-6">
+      {msg && <div className="bg-green-50 text-green-700 p-3 rounded-lg text-sm border border-green-100">{msg}</div>}
 
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">Solicitud #{sol.id}</h2>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="page-title flex items-center gap-2">
+            <ClipboardDocumentListIcon className="w-6 h-6 text-primary-600" />
+            Solicitud #{sol.id}
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">Gestion administrativa de la solicitud</p>
+        </div>
         <EstadoBadge estado={sol.estado} />
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border p-5 text-sm mb-4">
+      <div className="card p-5 text-sm">
         <div className="grid grid-cols-2 gap-3">
           <p><span className="font-medium text-gray-500">Fecha:</span> {sol.fecha_servicio?.substring(0, 10)}</p>
           <p><span className="font-medium text-gray-500">Horario:</span> {sol.hora_inicio?.substring(0, 5)} - {sol.hora_fin_estimada?.substring(0, 5) || 'N/A'}</p>
@@ -179,36 +190,47 @@ export default function DetalleSolicitudAdmin() {
         {sol.observaciones && <p className="mt-2"><span className="font-medium text-gray-500">Obs:</span> {sol.observaciones}</p>}
 
         {sol.vehiculo && (
-          <div className="pt-3 mt-3 border-t">
-            <p className="font-medium text-gray-700 mb-1">Asignación</p>
-            <p>Vehículo: {sol.vehiculo.placa} — {sol.vehiculo.marca} {sol.vehiculo.modelo}</p>
+          <div className="pt-3 mt-3 border-t border-gray-100">
+            <p className="font-medium text-gray-700 mb-1">Asignacion</p>
+            <p>Vehiculo: {sol.vehiculo.placa} — {sol.vehiculo.marca} {sol.vehiculo.modelo}</p>
             <p>Conductor: {sol.conductor?.nombre} — {sol.conductor?.telefono}</p>
           </div>
         )}
       </div>
 
       {/* Acciones */}
-      <div className="flex gap-3 mb-4">
+      <div className="flex gap-3 flex-wrap">
         {puedeProgramar && (
-          <button onClick={() => setProgModal(true)} className="px-4 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700">
+          <button onClick={() => setProgModal(true)} className="btn-primary">
+            <CalendarDaysIcon className="w-4 h-4" />
             Programar servicio
           </button>
         )}
         {puedeReprogramar && (
-          <button onClick={abrirReprogramar} className="px-4 py-2 bg-amber-500 text-white rounded text-sm hover:bg-amber-600">
-            {sol.estado === 'EN_EJECUCION' ? 'Cambiar asignación' : 'Reprogramar'}
+          <button onClick={abrirReprogramar} className="inline-flex items-center gap-2 bg-amber-500 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors">
+            <ArrowPathIcon className="w-4 h-4" />
+            {sol.estado === 'EN_EJECUCION' ? 'Cambiar asignacion' : 'Reprogramar'}
           </button>
         )}
-        <button onClick={() => setCancelModal(true)} className="px-4 py-2 border border-red-300 text-red-600 rounded text-sm hover:bg-red-50">Cancelar</button>
+        <button onClick={() => setCancelModal(true)} className="inline-flex items-center gap-2 px-4 py-2.5 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors">
+          <XCircleIcon className="w-4 h-4" />
+          Cancelar
+        </button>
         {puedeProgramar && (
-          <button onClick={() => setRechazarModal(true)} className="px-4 py-2 border border-gray-300 text-gray-600 rounded text-sm hover:bg-gray-50">Rechazar</button>
+          <button onClick={() => setRechazarModal(true)} className="btn-secondary">
+            <NoSymbolIcon className="w-4 h-4" />
+            Rechazar
+          </button>
         )}
       </div>
 
       {/* Historial */}
       {sol.historial?.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border p-5">
-          <h3 className="font-medium text-gray-700 mb-3">Historial</h3>
+        <div className="card p-5">
+          <h3 className="section-title flex items-center gap-2 mb-3">
+            <ClockIcon className="w-5 h-5 text-gray-400" />
+            Historial
+          </h3>
           <div className="space-y-2">
             {sol.historial.map((h, i) => (
               <div key={i} className="flex items-start gap-3 text-sm">
@@ -231,24 +253,24 @@ export default function DetalleSolicitudAdmin() {
             <div>
               <label className="text-xs text-gray-500">Fecha</label>
               <input type="date" value={progForm.fecha} onChange={e => setProgForm({...progForm, fecha: e.target.value})}
-                className="w-full border rounded px-2 py-1.5 text-sm" />
+                className="input-field" />
             </div>
             <div>
               <label className="text-xs text-gray-500">Hora inicio</label>
               <input type="time" value={progForm.hora_inicio} onChange={e => setProgForm({...progForm, hora_inicio: e.target.value})}
-                className="w-full border rounded px-2 py-1.5 text-sm" />
+                className="input-field" />
             </div>
             <div>
               <label className="text-xs text-gray-500">Hora fin</label>
               <input type="time" value={progForm.hora_fin} onChange={e => setProgForm({...progForm, hora_fin: e.target.value})}
-                className="w-full border rounded px-2 py-1.5 text-sm" />
+                className="input-field" />
             </div>
           </div>
 
           <div>
-            <label className="text-xs text-gray-500">Vehículo ({vehiculos.length} disponibles)</label>
+            <label className="text-xs text-gray-500">Vehiculo ({vehiculos.length} disponibles)</label>
             <select value={progForm.vehiculo_id} onChange={e => setProgForm({...progForm, vehiculo_id: e.target.value})}
-              className="w-full border rounded px-2 py-1.5 text-sm">
+              className="input-field">
               <option value="">Seleccionar...</option>
               {vehiculos.map(v => <option key={v.id} value={v.id}>{v.placa} — {v.marca} {v.modelo}</option>)}
             </select>
@@ -257,16 +279,16 @@ export default function DetalleSolicitudAdmin() {
           <div>
             <label className="text-xs text-gray-500">Conductor ({conductores.length} disponibles)</label>
             <select value={progForm.conductor_id} onChange={e => setProgForm({...progForm, conductor_id: e.target.value})}
-              className="w-full border rounded px-2 py-1.5 text-sm">
+              className="input-field">
               <option value="">Seleccionar...</option>
               {conductores.map(c => <option key={c.id} value={c.id}>{c.nombre} — {c.telefono}</option>)}
             </select>
           </div>
 
           <div className="flex justify-end gap-2">
-            <button onClick={() => setProgModal(false)} className="px-4 py-2 border rounded text-sm">Cancelar</button>
+            <button onClick={() => setProgModal(false)} className="btn-secondary">Cancelar</button>
             <button onClick={handleProgramar} disabled={!progForm.vehiculo_id || !progForm.conductor_id || progLoading}
-              className="px-4 py-2 bg-purple-600 text-white rounded text-sm disabled:opacity-50">
+              className="btn-primary disabled:opacity-50">
               {progLoading ? 'Programando...' : 'Programar'}
             </button>
           </div>
@@ -275,52 +297,52 @@ export default function DetalleSolicitudAdmin() {
 
       {/* Modal Cancelar */}
       <Modal open={cancelModal} onClose={() => setCancelModal(false)} title="Cancelar Solicitud">
-        <textarea value={motivo} onChange={e => setMotivo(e.target.value)} rows="3" placeholder="Motivo (mín 10 caracteres)..."
-          className="w-full border rounded px-3 py-2 text-sm mb-3" />
+        <textarea value={motivo} onChange={e => setMotivo(e.target.value)} rows="3" placeholder="Motivo (min 10 caracteres)..."
+          className="input-field mb-3" />
         <div className="flex justify-end gap-2">
-          <button onClick={() => setCancelModal(false)} className="px-4 py-2 border rounded text-sm">Volver</button>
+          <button onClick={() => setCancelModal(false)} className="btn-secondary">Volver</button>
           <button onClick={handleCancelar} disabled={motivo.length < 10 || actionLoading}
-            className="px-4 py-2 bg-red-600 text-white rounded text-sm disabled:opacity-50">Confirmar</button>
+            className="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors">Confirmar</button>
         </div>
       </Modal>
 
       {/* Modal Rechazar */}
       <Modal open={rechazarModal} onClose={() => setRechazarModal(false)} title="Rechazar Solicitud">
         <textarea value={motivo} onChange={e => setMotivo(e.target.value)} rows="3" placeholder="Motivo del rechazo..."
-          className="w-full border rounded px-3 py-2 text-sm mb-3" />
+          className="input-field mb-3" />
         <div className="flex justify-end gap-2">
-          <button onClick={() => setRechazarModal(false)} className="px-4 py-2 border rounded text-sm">Volver</button>
+          <button onClick={() => setRechazarModal(false)} className="btn-secondary">Volver</button>
           <button onClick={handleRechazar} disabled={!motivo || actionLoading}
-            className="px-4 py-2 bg-gray-700 text-white rounded text-sm disabled:opacity-50">Rechazar</button>
+            className="inline-flex items-center gap-2 bg-gray-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50 transition-colors">Rechazar</button>
         </div>
       </Modal>
 
       {/* Modal Reprogramar */}
       <Modal open={reprogModal} onClose={() => setReprogModal(false)} title="Reprogramar Servicio">
-        <p className="text-xs text-gray-500 mb-3">Modifique la fecha, horario, vehículo o conductor según la novedad.</p>
+        <p className="text-xs text-gray-500 mb-3">Modifique la fecha, horario, vehiculo o conductor segun la novedad.</p>
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-2">
             <div>
               <label className="text-xs text-gray-500">Fecha</label>
               <input type="date" value={reprogForm.fecha} onChange={e => setReprogForm({...reprogForm, fecha: e.target.value})}
-                className="w-full border rounded px-2 py-1.5 text-sm" />
+                className="input-field" />
             </div>
             <div>
               <label className="text-xs text-gray-500">Hora inicio</label>
               <input type="time" value={reprogForm.hora_inicio} onChange={e => setReprogForm({...reprogForm, hora_inicio: e.target.value})}
-                className="w-full border rounded px-2 py-1.5 text-sm" />
+                className="input-field" />
             </div>
             <div>
               <label className="text-xs text-gray-500">Hora fin</label>
               <input type="time" value={reprogForm.hora_fin} onChange={e => setReprogForm({...reprogForm, hora_fin: e.target.value})}
-                className="w-full border rounded px-2 py-1.5 text-sm" />
+                className="input-field" />
             </div>
           </div>
 
           <div>
-            <label className="text-xs text-gray-500">Vehículo ({reprogVehiculos.length} disponibles)</label>
+            <label className="text-xs text-gray-500">Vehiculo ({reprogVehiculos.length} disponibles)</label>
             <select value={reprogForm.vehiculo_id} onChange={e => setReprogForm({...reprogForm, vehiculo_id: e.target.value})}
-              className="w-full border rounded px-2 py-1.5 text-sm">
+              className="input-field">
               <option value="">Seleccionar...</option>
               {sol.vehiculo && !reprogVehiculos.find(v => v.id === sol.vehiculo.id) && (
                 <option value={sol.vehiculo.id}>{sol.vehiculo.placa} — {sol.vehiculo.marca} {sol.vehiculo.modelo} (actual)</option>
@@ -332,7 +354,7 @@ export default function DetalleSolicitudAdmin() {
           <div>
             <label className="text-xs text-gray-500">Conductor ({reprogConductores.length} disponibles)</label>
             <select value={reprogForm.conductor_id} onChange={e => setReprogForm({...reprogForm, conductor_id: e.target.value})}
-              className="w-full border rounded px-2 py-1.5 text-sm">
+              className="input-field">
               <option value="">Seleccionar...</option>
               {sol.conductor && !reprogConductores.find(c => c.id === sol.conductor.id) && (
                 <option value={sol.conductor.id}>{sol.conductor.nombre} — {sol.conductor.telefono} (actual)</option>
@@ -342,9 +364,9 @@ export default function DetalleSolicitudAdmin() {
           </div>
 
           <div className="flex justify-end gap-2">
-            <button onClick={() => setReprogModal(false)} className="px-4 py-2 border rounded text-sm">Cancelar</button>
+            <button onClick={() => setReprogModal(false)} className="btn-secondary">Cancelar</button>
             <button onClick={handleReprogramar} disabled={!reprogForm.vehiculo_id || !reprogForm.conductor_id || reprogLoading}
-              className="px-4 py-2 bg-amber-500 text-white rounded text-sm disabled:opacity-50 hover:bg-amber-600">
+              className="inline-flex items-center gap-2 bg-amber-500 text-white px-4 py-2.5 rounded-lg text-sm font-medium disabled:opacity-50 hover:bg-amber-600 transition-colors">
               {reprogLoading ? 'Reprogramando...' : 'Reprogramar'}
             </button>
           </div>

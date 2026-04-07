@@ -1,3 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans antialiased text-gray-700;
+  }
+}
+
+@layer components {
+  .sidebar-link {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150;
+  }
+  .sidebar-link-active {
+    @apply bg-white/15 text-white shadow-sm;
+  }
+  .sidebar-link-inactive {
+    @apply text-primary-200 hover:bg-white/10 hover:text-white;
+  }
+  .card {
+    @apply bg-white rounded-xl border border-gray-100 shadow-sm;
+  }
+  .card-hover {
+    @apply hover:shadow-md hover:border-gray-200 transition-all duration-200;
+  }
+  .page-title {
+    @apply text-2xl font-bold text-gray-900;
+  }
+  .section-title {
+    @apply text-lg font-semibold text-gray-800;
+  }
+  .btn-primary {
+    @apply inline-flex items-center gap-2 bg-primary-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-700 active:bg-primary-800 transition-colors shadow-sm disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 border border-gray-200 bg-white text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors shadow-sm;
+  }
+  .btn-accent {
+    @apply inline-flex items-center gap-2 bg-accent-500 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-accent-600 transition-colors shadow-sm;
+  }
+  .input-field {
+    @apply w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-colors;
+  }
+  .table-header {
+    @apply bg-gray-50/80 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider;
+  }
+  .table-cell {
+    @apply px-5 py-3.5 text-sm;
+  }
+  .table-row {
+    @apply border-t border-gray-50 hover:bg-primary-50/30 transition-colors;
+  }
+}
