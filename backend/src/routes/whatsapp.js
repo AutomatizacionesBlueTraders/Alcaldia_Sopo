@@ -17,6 +17,10 @@ router.post('/iniciar-servicio-wa',  ctrl.iniciarServicioWa);
 router.post('/finalizar-servicio-wa', ctrl.finalizarServicioWa);
 router.post('/recordatorios',        ctrl.recordatorios);
 
+// Crear solicitud con campos nuevos — llamado por n8n
+const solCtrl = require('../controllers/solicitudes.controller');
+router.post('/solicitud', solCtrl.crear);
+
 // Búsqueda de conocimiento — llamado por n8n AI Agent
 const conocimientoCtrl = require('../controllers/conocimiento.controller');
 router.get('/conocimiento/buscar', conocimientoCtrl.buscar);

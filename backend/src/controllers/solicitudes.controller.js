@@ -4,32 +4,69 @@ const db = require('../config/db');
 
 async function crear(req, res) {
   try {
-    const { fecha_servicio, hora_inicio, hora_fin_estimada, origen, destino, pasajeros, tipo_servicio, contacto_nombre, contacto_telefono, observaciones } = req.body;
+    const {
+      descripcion_recorrido, origen, destino, pasajeros,
+      horario_solicitud, nombre_solicitante, telefono_solicitante,
+      nombre_paciente,
+      // Campos legacy para compatibilidad
+      hora_inicio, fecha_servicio, hora_fin_estimada, tipo_servicio,
+      contacto_nombre, contacto_telefono, observaciones,
+      dependencia_id: body_dependencia_id,
+      dependencia_nombre: body_dependencia_nombre
+    } = req.body;
 
-    if (!fecha_servicio || !hora_inicio || !origen || !destino) {
-      return res.status(400).json({ error: 'Campos obligatorios: fecha_servicio, hora_inicio, origen, destino' });
+    const horario = (horario_solicitud || hora_inicio || '').trim();
+
+    if (!origen || !destino || !horario) {
+      return res.status(400).json({ error: 'Campos obligatorios: origen, destino, horario_solicitud' });
+    }
+
+    // Resolver dependencia_id: por ID directo, por nombre, o del usuario autenticado
+    let dependencia_id = body_dependencia_id || req.user?.dependencia_id;
+    if (!dependencia_id && body_dependencia_nombre) {
+      const nombreLimpio = body_dependencia_nombre.trim().toLowerCase();
+      const dep = await db('dependencias')
+        .whereRaw('LOWER(TRIM(nombre)) LIKE ?', [`%${nombreLimpio}%`])
+        .first();
+      if (dep) dependencia_id = dep.id;
+    }
+
+    if (!dependencia_id) {
+      return res.status(400).json({ error: 'No se pudo identificar la dependencia' });
     }
 
     const [solicitud] = await db('solicitudes').insert({
-      dependencia_id: req.user.dependencia_id,
-      usuario_id: req.user.id,
-      fecha_servicio, hora_inicio, hora_fin_estimada, origen, destino,
+      dependencia_id,
+      usuario_id: req.user?.id || null,
+      fecha_servicio: fecha_servicio || new Date().toISOString().split('T')[0],
+      horario_solicitud: horario,
+      hora_fin_estimada,
+      origen,
+      destino,
       pasajeros: pasajeros || 1,
-      tipo_servicio, contacto_nombre, contacto_telefono, observaciones,
+      tipo_servicio,
+      descripcion_recorrido,
+      nombre_solicitante: nombre_solicitante || contacto_nombre,
+      telefono_solicitante: telefono_solicitante || contacto_telefono,
+      contacto_nombre: contacto_nombre || nombre_solicitante,
+      contacto_telefono: contacto_telefono || telefono_solicitante,
+      nombre_paciente,
+      observaciones,
       estado: 'ENVIADA',
-      canal: 'web'
+      canal: req.body.canal || 'web'
     }).returning('*');
 
     await db('historial_solicitudes').insert({
       solicitud_id: solicitud.id,
       estado_anterior: null,
       estado_nuevo: 'ENVIADA',
-      usuario_id: req.user.id,
-      notas: 'Solicitud creada desde web'
+      usuario_id: req.user?.id || null,
+      notas: req.body.canal === 'whatsapp' ? 'Solicitud creada vía WhatsApp' : 'Solicitud creada desde web'
     });
 
     res.status(201).json(solicitud);
   } catch (err) {
+    console.error('Error al crear solicitud:', err);
     res.status(500).json({ error: 'Error al crear solicitud' });
   }
 }

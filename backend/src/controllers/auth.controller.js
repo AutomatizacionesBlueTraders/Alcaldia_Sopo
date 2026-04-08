@@ -33,8 +33,14 @@ async function login(req, res) {
       updated_at: db.fn.now()
     });
 
+    let dependencia_nombre = null;
+    if (user.dependencia_id) {
+      const dep = await db('dependencias').where({ id: user.dependencia_id }).first();
+      dependencia_nombre = dep?.nombre || null;
+    }
+
     res.json({
-      user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol, dependencia_id: user.dependencia_id },
+      user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol, dependencia_id: user.dependencia_id, dependencia_nombre },
       ...tokens
     });
   } catch (err) {
@@ -82,8 +88,9 @@ async function logout(req, res) {
 async function me(req, res) {
   try {
     const user = await db('usuarios')
-      .select('id', 'nombre', 'email', 'rol', 'dependencia_id')
-      .where({ id: req.user.id, activo: true })
+      .select('usuarios.id', 'usuarios.nombre', 'usuarios.email', 'usuarios.rol', 'usuarios.dependencia_id', 'dependencias.nombre as dependencia_nombre')
+      .leftJoin('dependencias', 'usuarios.dependencia_id', 'dependencias.id')
+      .where({ 'usuarios.id': req.user.id, 'usuarios.activo': true })
       .first();
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
