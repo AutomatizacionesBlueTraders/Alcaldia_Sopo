@@ -164,7 +164,7 @@ async function misSolicitudes(req, res) {
 
 async function cancelarSolicitud(req, res) {
   try {
-    const { solicitud_id, telefono } = req.body;
+    const { solicitud_id, telefono, motivo } = req.body;
     if (!solicitud_id) return res.status(400).json({ ok: false, mensaje: 'solicitud_id requerido' });
 
     const solicitud = await db('solicitudes').where({ id: solicitud_id }).first();
@@ -174,12 +174,14 @@ async function cancelarSolicitud(req, res) {
       return res.json({ ok: false, mensaje: `❌ La solicitud #${solicitud_id} está en estado *${solicitud.estado}* y no puede cancelarse.` });
     }
 
-    await db('solicitudes').where({ id: solicitud_id }).update({ estado: 'CANCELADA', updated_at: db.fn.now() });
+    const motivoCancelacion = motivo || `Cancelada vía WhatsApp (${telefono || 'desconocido'})`;
+
+    await db('solicitudes').where({ id: solicitud_id }).update({ estado: 'CANCELADA', motivo_cancelacion: motivoCancelacion, updated_at: db.fn.now() });
     await db('historial_solicitudes').insert({
       solicitud_id,
       estado_anterior: solicitud.estado,
       estado_nuevo: 'CANCELADA',
-      notas: `Cancelada vía WhatsApp (${telefono || 'desconocido'})`
+      notas: motivoCancelacion
     });
 
     const asig = await db('asignaciones').where({ solicitud_id }).first();
@@ -378,7 +380,7 @@ async function recordatorios(req, res) {
       if (s.contacto_telefono) {
         mensajes.push({
           to: `whatsapp:+57${s.contacto_telefono.replace(/\D/g, '')}`,
-          body: `🔔 *Recordatorio — Alcaldía de Sopó*\n\nMañana tienes un servicio programado:\n\n📍 *${s.origen} → ${s.destino}*\n⏰ Hora: *${hora}*\n🚗 Conductor: *${s.conductor_nombre}*\n\nSolicitud #${s.solicitud_id}`
+          body: `*Recordatorio — Alcaldía de Sopó*\n\nMañana tienes un servicio programado:\n\nServicio: *${s.solicitud_id}*\nSolicitante: *${s.contacto_nombre}*\nTeléfono: *${s.contacto_telefono}*\nRuta: *${s.origen} → ${s.destino}*\nHora: *${hora}*\nConductor: *${s.conductor_nombre}*`
         });
       }
       if (s.conductor_telefono) {
