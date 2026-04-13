@@ -18,18 +18,36 @@ exports.seed = async function(knex) {
   await knex('usuarios').del();
   await knex('dependencias').del();
 
-  // Dependencias reales de la Alcaldía de Sopó
+  // Dependencias reales de la Alcaldía de Sopó (catálogo completo)
   await knex('dependencias').insert([
-    { id: 1, nombre: 'Secretaría de Desarrollo Institucional' },
-    { id: 2, nombre: 'Secretaría de Gobierno' },
-    { id: 3, nombre: 'Secretaría de Infraestructura' },
-    { id: 4, nombre: 'Secretaría de Desarrollo Económico' },
-    { id: 5, nombre: 'Secretaría de Ambiente' },
-    { id: 6, nombre: 'Secretaría de Movilidad' },
-    { id: 7, nombre: 'Secretaría de Cultura' },
-    { id: 8, nombre: 'Secretaría Agropecuaria' },
-    { id: 9, nombre: 'Secretaría de Deportes' },
+    { id: 1,  nombre: 'Secretaría de Desarrollo Institucional' },
+    { id: 2,  nombre: 'Secretaría de Gobierno' },
+    { id: 3,  nombre: 'Secretaría de Infraestructura' },
+    { id: 4,  nombre: 'Secretaría de Desarrollo Económico' },
+    { id: 5,  nombre: 'Secretaría de Ambiente' },
+    { id: 6,  nombre: 'Secretaría de Movilidad' },
+    { id: 7,  nombre: 'Secretaría de Cultura' },
+    { id: 8,  nombre: 'Secretaría Agropecuaria' },
+    { id: 9,  nombre: 'Secretaría de Deportes' },
     { id: 10, nombre: 'Despacho del Alcalde' },
+    { id: 11, nombre: 'Salud' },
+    { id: 12, nombre: 'Desarrollo Social' },
+    { id: 13, nombre: 'Educacion' },
+    { id: 14, nombre: 'Almacen General' },
+    { id: 15, nombre: 'Urbanismo y Desarrollo Territorial' },
+    { id: 16, nombre: 'Planeacion Estrategica' },
+    { id: 17, nombre: 'Direccion de Vivienda' },
+    { id: 18, nombre: 'Direccion de Turismo' },
+    { id: 19, nombre: 'Oficina de Comunicaciones' },
+    { id: 20, nombre: 'Ciencia, Tecnologia e Innovacion' },
+    { id: 21, nombre: 'Inspeccion de Policia' },
+    { id: 22, nombre: 'Mujer, Equidad y Genero' },
+    { id: 23, nombre: 'Concejo Municipal' },
+    { id: 24, nombre: 'Comisaria de Familia 1' },
+    { id: 25, nombre: 'Comisaria de Familia 2' },
+    { id: 26, nombre: 'Atencion al Ciudadano' },
+    { id: 27, nombre: 'Hacienda' },
+    { id: 28, nombre: 'Sisben' },
   ]);
 
   // Usuarios de prueba (password: Sopo2026*)
