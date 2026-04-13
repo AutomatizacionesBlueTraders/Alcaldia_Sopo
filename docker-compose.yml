@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  postgres:
+  sopo-db:
     image: pgvector/pgvector:pg17
     restart: always
     environment:
@@ -18,7 +18,7 @@ services:
       timeout: 5s
       retries: 5
 
-  backend:
+  sopo-backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -40,7 +40,7 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      postgres:
+      sopo-db:
         condition: service_healthy
     volumes:
       - uploads:/app/uploads
@@ -53,7 +53,7 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - backend
+      - sopo-backend
 
 volumes:
   postgres_data:
