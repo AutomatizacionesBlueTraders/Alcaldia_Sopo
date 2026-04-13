@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 import Modal from '../../components/Modal';
-import { PlusIcon, UsersIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, UsersIcon, PencilSquareIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 const ESTADO_BADGE = {
   activo: 'bg-green-50 text-green-700 ring-green-200',
@@ -58,6 +58,11 @@ export default function Conductores() {
 
   return (
     <div className="space-y-6">
+      <Link to="/admin" className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 text-sm font-medium">
+        <ArrowLeftIcon className="w-4 h-4" />
+        Volver al dashboard
+      </Link>
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="page-title">Conductores</h2>

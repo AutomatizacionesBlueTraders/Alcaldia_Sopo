@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg17
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -31,7 +31,12 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN}
-      N8N_INTERNAL_URL: http://n8n:5678
+      N8N_INTERNAL_URL: ${N8N_INTERNAL_URL:-http://n8n:5678}
+      N8N_WEBHOOK_SALIDA: ${N8N_WEBHOOK_SALIDA:-wa-salida}
+      N8N_API_KEY: ${N8N_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_EMBEDDING_MODEL: ${GEMINI_EMBEDDING_MODEL:-gemini-embedding-001}
+      GEMINI_EMBEDDING_DIMS: ${GEMINI_EMBEDDING_DIMS:-768}
     ports:
       - "3000:3000"
     depends_on:
@@ -50,34 +55,6 @@ services:
     depends_on:
       - backend
 
-  n8n:
-    image: n8nio/n8n:latest
-    restart: always
-    environment:
-      - N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE}
-      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
-      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
-      - N8N_HOST=${N8N_HOST}
-      - N8N_PORT=${N8N_PORT}
-      - N8N_RESTRICT_PRIVATE_NETWORK=false
-      - N8N_BLOCK_FILE_ACCESS_TO_N8N_FILES=false
-      - NODE_TLS_REJECT_UNAUTHORIZED=0
-      - WEBHOOK_URL=${WEBHOOK_URL}
-      - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_HOST=postgres
-      - DB_POSTGRESDB_PORT=5432
-      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
-      - DB_POSTGRESDB_USER=${POSTGRES_USER}
-      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
-    ports:
-      - "5678:5678"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - n8n_data:/home/node/.n8n
-
 volumes:
   postgres_data:
   uploads:
-  n8n_data:

@@ -28,4 +28,12 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { requireAuth, requireRole };
+function requireApiKey(req, res, next) {
+  const key = req.headers['x-api-key'];
+  if (!key || key !== process.env.N8N_API_KEY) {
+    return res.status(401).json({ error: 'API Key inválida o no proporcionada' });
+  }
+  next();
+}
+
+module.exports = { requireAuth, requireRole, requireApiKey };

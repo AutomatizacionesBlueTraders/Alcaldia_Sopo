@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import EstadoBadge from '../../components/EstadoBadge';
 import {
-  PlusIcon,
   ClockIcon,
   CalendarIcon,
   CheckCircleIcon,
@@ -11,32 +10,39 @@ import {
   TruckIcon,
   DocumentTextIcon,
   ArrowRightIcon,
+  CalendarDaysIcon,
+  BeakerIcon,
 } from '@heroicons/react/24/outline';
 
-const CARD_CONFIG = [
-  { key: 'nuevas_hoy',     label: 'Nuevas hoy',       icon: PlusIcon,          bg: 'bg-blue-50',    iconBg: 'bg-blue-100',    color: 'text-blue-700',    iconColor: 'text-blue-600' },
-  { key: 'pend_prog',      label: 'Pend. programación', icon: ClockIcon,        bg: 'bg-amber-50',   iconBg: 'bg-amber-100',   color: 'text-amber-700',   iconColor: 'text-amber-600' },
-  { key: 'programadas',    label: 'Programadas',       icon: CalendarIcon,      bg: 'bg-purple-50',  iconBg: 'bg-purple-100',  color: 'text-purple-700',  iconColor: 'text-purple-600' },
-  { key: 'confirmadas',    label: 'Confirmadas',       icon: CheckCircleIcon,   bg: 'bg-green-50',   iconBg: 'bg-green-100',   color: 'text-green-700',   iconColor: 'text-green-600' },
-  { key: 'en_ejecucion',   label: 'En ejecución',      icon: PlayIcon,          bg: 'bg-indigo-50',  iconBg: 'bg-indigo-100',  color: 'text-indigo-700',  iconColor: 'text-indigo-600' },
-  { key: 'servicios_hoy',  label: 'Servicios hoy',     icon: TruckIcon,         bg: 'bg-emerald-50', iconBg: 'bg-emerald-100', color: 'text-emerald-700', iconColor: 'text-emerald-600' },
-  { key: 'docs_vencer',    label: 'Docs por vencer',   icon: DocumentTextIcon,  bg: 'bg-red-50',     iconBg: 'bg-red-100',     color: 'text-red-700',     iconColor: 'text-red-600' },
-];
+const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+function buildCards(hoy) {
+  return [
+    { key: 'pend_prog',      label: 'Pend. programacion', icon: ClockIcon,        bg: 'bg-amber-50',   iconBg: 'bg-amber-100',   color: 'text-amber-700',   iconColor: 'text-amber-600', to: '/admin/solicitudes?estado=PENDIENTE_PROGRAMACION' },
+    { key: 'programadas',    label: 'Programadas',       icon: CalendarIcon,      bg: 'bg-purple-50',  iconBg: 'bg-purple-100',  color: 'text-purple-700',  iconColor: 'text-purple-600', to: '/admin/solicitudes?estado=PROGRAMADA' },
+    { key: 'confirmadas',    label: 'Confirmadas',       icon: CheckCircleIcon,   bg: 'bg-green-50',   iconBg: 'bg-green-100',   color: 'text-green-700',   iconColor: 'text-green-600', to: '/admin/solicitudes?estado=CONFIRMADA' },
+    { key: 'en_ejecucion',   label: 'En ejecucion',      icon: PlayIcon,          bg: 'bg-indigo-50',  iconBg: 'bg-indigo-100',  color: 'text-indigo-700',  iconColor: 'text-indigo-600', to: '/admin/solicitudes?estado=EN_EJECUCION' },
+    { key: 'servicios_hoy',  label: 'Servicios hoy',     icon: TruckIcon,         bg: 'bg-emerald-50', iconBg: 'bg-emerald-100', color: 'text-emerald-700', iconColor: 'text-emerald-600', to: `/admin/solicitudes?fecha_desde=${hoy}&fecha_hasta=${hoy}` },
+    { key: 'docs_vencer',    label: 'Docs por vencer',   icon: DocumentTextIcon,  bg: 'bg-red-50',     iconBg: 'bg-red-100',     color: 'text-red-700',     iconColor: 'text-red-600',    to: '/admin/documentos?por_vencer=1' },
+    { key: 'aceite_alerta',  label: 'Aceite por cambiar', icon: BeakerIcon,       bg: 'bg-orange-50',  iconBg: 'bg-orange-100',  color: 'text-orange-700',  iconColor: 'text-orange-600', to: '/admin/vehiculos' },
+  ];
+}
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [servicios, setServicios] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const hoy = new Date().toISOString().split('T')[0];
+    const hoy = new Date().toLocaleDateString('en-CA');
     Promise.all([
       api.get('/admin/dashboard'),
       api.get('/admin/calendario', { params: { fecha: hoy } })
     ]).then(([d, s]) => {
       setData(d.data);
       setServicios(s.data);
-    }).finally(() => setLoading(false));
+    }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   if (loading) return (
@@ -46,14 +52,18 @@ export default function AdminDashboard() {
   );
 
   const values = {
-    nuevas_hoy: data?.nuevas_hoy || 0,
     pend_prog: data?.estados?.PENDIENTE_PROGRAMACION || 0,
     programadas: data?.estados?.PROGRAMADA || 0,
     confirmadas: data?.estados?.CONFIRMADA || 0,
     en_ejecucion: data?.estados?.EN_EJECUCION || 0,
     servicios_hoy: data?.servicios_hoy || 0,
     docs_vencer: data?.docs_por_vencer || 0,
+    aceite_alerta: data?.aceite_alerta || 0,
   };
+
+  const mes = data?.mes || {};
+  const mesNombre = MESES[new Date().getMonth()];
+  const mesAnio = new Date().getFullYear();
 
   return (
     <div className="space-y-8">
@@ -76,17 +86,61 @@ export default function AdminDashboard() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
-        {CARD_CONFIG.map(c => (
-          <div key={c.key} className={`${c.bg} rounded-xl p-4 border border-transparent`}>
-            <div className="flex items-center gap-3 mb-3">
-              <div className={`${c.iconBg} w-9 h-9 rounded-lg flex items-center justify-center`}>
-                <c.icon className={`w-5 h-5 ${c.iconColor}`} />
+        {buildCards(new Date().toLocaleDateString('en-CA')).map(c => {
+          const inner = (
+            <>
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`${c.iconBg} w-9 h-9 rounded-lg flex items-center justify-center`}>
+                  <c.icon className={`w-5 h-5 ${c.iconColor}`} />
+                </div>
               </div>
+              <p className={`text-2xl font-bold ${c.color}`}>{values[c.key]}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{c.label}</p>
+            </>
+          );
+          return c.to ? (
+            <Link key={c.key} to={c.to} className={`${c.bg} rounded-xl p-4 border border-transparent hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer block`}>
+              {inner}
+            </Link>
+          ) : (
+            <div key={c.key} className={`${c.bg} rounded-xl p-4 border border-transparent`}>
+              {inner}
             </div>
-            <p className={`text-2xl font-bold ${c.color}`}>{values[c.key]}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{c.label}</p>
+          );
+        })}
+      </div>
+
+      {/* Resumen del mes */}
+      <div>
+        <h3 className="section-title flex items-center gap-2 mb-4">
+          <CalendarDaysIcon className="w-5 h-5 text-primary-500" />
+          Resumen de {mesNombre} {mesAnio}
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="card p-4">
+            <p className="text-xs text-gray-500 mb-1">Solicitudes del mes</p>
+            <p className="text-2xl font-bold text-gray-800">{mes.solicitudes_total || 0}</p>
           </div>
-        ))}
+          <div className="card p-4">
+            <p className="text-xs text-gray-500 mb-1">Finalizadas</p>
+            <p className="text-2xl font-bold text-emerald-600">{mes.solicitudes?.FINALIZADA || 0}</p>
+          </div>
+          <div className="card p-4">
+            <p className="text-xs text-gray-500 mb-1">Canceladas</p>
+            <p className="text-2xl font-bold text-red-600">{mes.solicitudes?.CANCELADA || 0}</p>
+          </div>
+          <div className="card p-4">
+            <p className="text-xs text-gray-500 mb-1">Tanqueos</p>
+            <div className="flex items-baseline gap-2">
+              <p className="text-2xl font-bold text-primary-600">{mes.combustible_tanqueos || 0}</p>
+              <span className="text-xs text-gray-400">{(mes.combustible_galones || 0).toFixed(1)} gal</span>
+            </div>
+          </div>
+          <div className="card p-4">
+            <p className="text-xs text-gray-500 mb-1">Gasto combustible</p>
+            <p className="text-2xl font-bold text-primary-600">${(mes.combustible_valor || 0).toLocaleString('es-CO')}</p>
+          </div>
+        </div>
       </div>
 
       {/* Servicios de hoy */}
@@ -101,21 +155,29 @@ export default function AdminDashboard() {
           <table className="w-full text-sm">
             <thead className="table-header">
               <tr>
+                <th className="table-cell">ID</th>
                 <th className="table-cell">Hora</th>
                 <th className="table-cell">Destino</th>
-                <th className="table-cell">Vehículo</th>
+                <th className="table-cell">Vehiculo</th>
                 <th className="table-cell">Conductor</th>
                 <th className="table-cell">Estado</th>
               </tr>
             </thead>
             <tbody>
               {servicios.length === 0 ? (
-                <tr><td colSpan="5" className="px-5 py-10 text-center text-gray-400">
+                <tr><td colSpan="6" className="px-5 py-10 text-center text-gray-400">
                   <TruckIcon className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                   Sin servicios programados para hoy
                 </td></tr>
               ) : servicios.map(s => (
-                <tr key={s.id} className="table-row">
+                <tr
+                  key={s.id}
+                  onClick={() => navigate(`/admin/solicitudes/${s.solicitud_id}`)}
+                  className="table-row cursor-pointer hover:bg-gray-50"
+                >
+                  <td className="table-cell">
+                    <span className="text-primary-600 font-semibold">#{s.solicitud_id}</span>
+                  </td>
                   <td className="table-cell font-medium">{s.hora_inicio?.substring(0, 5)} - {s.hora_fin?.substring(0, 5)}</td>
                   <td className="table-cell">{s.destino}</td>
                   <td className="table-cell"><span className="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">{s.placa}</span> {s.marca}</td>

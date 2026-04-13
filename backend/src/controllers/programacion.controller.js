@@ -104,20 +104,39 @@ async function programar(req, res) {
     // Notificaciones WhatsApp vía n8n
     const conductor = await db('conductores').where({ id: conductor_id }).first();
     const vehiculo = await db('vehiculos').where({ id: vehiculo_id }).first();
+    const dependencia = await db('dependencias').where({ id: solicitud.dependencia_id }).first();
 
     await notificarN8n('programacion_servicio', {
+      action: 'asignacion_servicio',
       solicitud_id: solicitud.id,
-      contacto_telefono: solicitud.contacto_telefono,
-      contacto_nombre: solicitud.contacto_nombre,
-      conductor_nombre: conductor?.nombre,
-      conductor_telefono: conductor?.telefono,
-      vehiculo_placa: vehiculo?.placa,
+      // Solicitante — campos modernos con fallback a legacy
+      solicitante_nombre: solicitud.nombre_solicitante || solicitud.contacto_nombre || null,
+      solicitante_telefono: solicitud.telefono_solicitante || solicitud.contacto_telefono || null,
+      telefono_solicitante: solicitud.telefono_solicitante || solicitud.contacto_telefono || null,
+      solicitante_identificacion: solicitud.identificacion_solicitante || null,
+      // Dependencia que solicitó el servicio
+      dependencia_id: solicitud.dependencia_id,
+      dependencia_nombre: dependencia?.nombre || null,
+      // Conductor
+      conductor_nombre: conductor?.nombre || null,
+      conductor_telefono: conductor?.telefono || null,
+      // Vehículo
+      vehiculo_id: vehiculo?.id || null,
+      vehiculo_placa: vehiculo?.placa || null,
+      vehiculo_marca: vehiculo?.marca || null,
+      vehiculo_modelo: vehiculo?.modelo || null,
+      // Horario
       fecha,
       hora_inicio: hora_inicio.substring(0, 5),
       hora_fin: hora_fin.substring(0, 5),
+      horario_solicitud: solicitud.horario_solicitud || null,
+      // Recorrido
       origen: solicitud.origen,
       destino: solicitud.destino,
-      pasajeros: solicitud.pasajeros
+      descripcion_recorrido: solicitud.descripcion_recorrido || null,
+      pasajeros: solicitud.pasajeros,
+      nombre_paciente: solicitud.nombre_paciente || null,
+      observaciones: solicitud.observaciones || null
     });
 
     res.status(201).json(asignacion);
@@ -188,9 +207,68 @@ async function reprogramar(req, res) {
       notas: `Reprogramación — Vehículo: ${newVeh}, Conductor: ${newCond}, Fecha: ${newFecha} ${newInicio}-${newFin}`
     });
 
-    res.json({ message: 'Reprogramado' });
+    // Detectar si hubo cambio real en hora / vehículo / conductor
+    // DATE de Postgres viene como Date con UTC 00:00 — usar toISOString para no cruzar zona horaria
+    const fechaAnterior = asignacion.fecha instanceof Date
+      ? asignacion.fecha.toISOString().substring(0, 10)
+      : String(asignacion.fecha).substring(0, 10);
+    const fechaNueva = typeof newFecha === 'string'
+      ? newFecha.substring(0, 10)
+      : new Date(newFecha).toISOString().substring(0, 10);
+    const hubieroCambios =
+      parseInt(asignacion.vehiculo_id) !== parseInt(newVeh) ||
+      parseInt(asignacion.conductor_id) !== parseInt(newCond) ||
+      fechaAnterior !== fechaNueva ||
+      String(asignacion.hora_inicio).substring(0, 5) !== String(newInicio).substring(0, 5) ||
+      String(asignacion.hora_fin).substring(0, 5) !== String(newFin).substring(0, 5);
+
+    if (hubieroCambios) {
+      const conductor = await db('conductores').where({ id: newCond }).first();
+      const vehiculo = await db('vehiculos').where({ id: newVeh }).first();
+      const dependencia = await db('dependencias').where({ id: solicitud.dependencia_id }).first();
+
+      await notificarN8n('reprogramacion', {
+        action: 'reprogramacion',
+        solicitud_id: solicitud.id,
+        // Solicitante
+        solicitante_nombre: solicitud.nombre_solicitante || solicitud.contacto_nombre || null,
+        solicitante_telefono: solicitud.telefono_solicitante || solicitud.contacto_telefono || null,
+        telefono_solicitante: solicitud.telefono_solicitante || solicitud.contacto_telefono || null,
+        solicitante_identificacion: solicitud.identificacion_solicitante || null,
+        // Dependencia
+        dependencia_id: solicitud.dependencia_id,
+        dependencia_nombre: dependencia?.nombre || null,
+        // Conductor (nuevo)
+        conductor_nombre: conductor?.nombre || null,
+        conductor_telefono: conductor?.telefono || null,
+        // Vehículo (nuevo)
+        vehiculo_id: vehiculo?.id || null,
+        vehiculo_placa: vehiculo?.placa || null,
+        vehiculo_marca: vehiculo?.marca || null,
+        vehiculo_modelo: vehiculo?.modelo || null,
+        // Horario (nuevo)
+        fecha: fechaNueva,
+        hora_inicio: String(newInicio).substring(0, 5),
+        hora_fin: String(newFin).substring(0, 5),
+        horario_solicitud: solicitud.horario_solicitud || null,
+        // Horario anterior (para que el mensaje pueda referenciar qué cambió)
+        fecha_anterior: fechaAnterior,
+        hora_inicio_anterior: String(asignacion.hora_inicio).substring(0, 5),
+        hora_fin_anterior: String(asignacion.hora_fin).substring(0, 5),
+        // Recorrido
+        origen: solicitud.origen,
+        destino: solicitud.destino,
+        descripcion_recorrido: solicitud.descripcion_recorrido || null,
+        pasajeros: solicitud.pasajeros,
+        nombre_paciente: solicitud.nombre_paciente || null,
+        observaciones: solicitud.observaciones || null
+      });
+    }
+
+    res.json({ message: 'Reprogramado', notificado: hubieroCambios });
   } catch (err) {
-    res.status(500).json({ error: 'Error al reprogramar' });
+    console.error('Error al reprogramar:', err);
+    res.status(500).json({ error: 'Error al reprogramar', detail: err.message });
   }
 }
 

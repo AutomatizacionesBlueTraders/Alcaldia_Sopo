@@ -11,6 +11,7 @@ export default function NuevaSolicitud() {
   const [loading, setLoading] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
   const [form, setForm] = useState({
+    fecha_servicio: '',
     descripcion_recorrido: '',
     origen: '',
     destino: '',
@@ -28,7 +29,7 @@ export default function NuevaSolicitud() {
   function handlePreview(e) {
     e.preventDefault();
     setError('');
-    if (!form.origen || !form.destino || !form.horario_solicitud || !form.nombre_solicitante || !form.telefono_solicitante) {
+    if (!form.fecha_servicio || !form.origen || !form.destino || !form.horario_solicitud || !form.nombre_solicitante || !form.telefono_solicitante) {
       setError('Completa los campos obligatorios');
       return;
     }
@@ -51,6 +52,7 @@ export default function NuevaSolicitud() {
   if (confirmando) {
     const items = [
       { label: 'Dependencia', value: user?.dependencia_nombre || user?.nombre || '—' },
+      { label: 'Fecha del servicio', value: form.fecha_servicio },
       { label: 'Descripción del recorrido', value: form.descripcion_recorrido || 'N/A' },
       { label: 'Lugar de salida', value: form.origen },
       { label: 'Destino del servicio', value: form.destino },
@@ -107,6 +109,12 @@ export default function NuevaSolicitud() {
             {error}
           </div>
         )}
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Fecha del servicio *</label>
+          <input type="date" name="fecha_servicio" value={form.fecha_servicio} onChange={handleChange} required
+            min={new Date().toLocaleDateString('en-CA')} className="input-field" />
+        </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Descripción del recorrido</label>

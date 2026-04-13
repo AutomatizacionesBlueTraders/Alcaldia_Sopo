@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ExclamationTriangleIcon, FunnelIcon, InboxIcon } from '@heroicons/react/24/outline';
+import { Link } from 'react-router-dom';
+import { ExclamationTriangleIcon, FunnelIcon, InboxIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import api from '../../api/axios';
 
 export default function Novedades() {
@@ -33,6 +34,11 @@ export default function Novedades() {
 
   return (
     <div className="space-y-6">
+      <Link to="/admin" className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 text-sm font-medium">
+        <ArrowLeftIcon className="w-4 h-4" />
+        Volver al dashboard
+      </Link>
+
       <div>
         <h2 className="page-title flex items-center gap-2">
           <ExclamationTriangleIcon className="w-6 h-6 text-primary-600" />

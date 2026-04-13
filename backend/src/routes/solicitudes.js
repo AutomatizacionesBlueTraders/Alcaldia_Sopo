@@ -8,6 +8,8 @@ router.get('/dashboard', requireAuth, requireRole('dependencia'), sol.dashboardD
 router.post('/', requireAuth, requireRole('dependencia'), sol.crear);
 router.get('/', requireAuth, requireRole('dependencia'), sol.listarPorDependencia);
 router.get('/:id', requireAuth, sol.detalle);
+router.patch('/:id', requireAuth, sol.editar);
+router.patch('/:id/aprobar', requireAuth, requireRole('dependencia'), sol.aprobar);
 router.patch('/:id/cancelar', requireAuth, sol.cancelar);
 router.post('/:id/transferir', requireAuth, requireRole('dependencia'), sol.transferir);
 

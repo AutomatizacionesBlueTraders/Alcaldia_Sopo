@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { UserIcon, ArrowLeftIcon, ClockIcon, CheckCircleIcon, InboxIcon } from '@heroicons/react/24/outline';
+import { UserIcon, ArrowLeftIcon, ClockIcon, CheckCircleIcon, InboxIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 import api from '../../api/axios';
 import EstadoBadge from '../../components/EstadoBadge';
+import WeekCalendar from '../../components/WeekCalendar';
 
 export default function DetalleConductor() {
   const { id } = useParams();
@@ -10,7 +11,22 @@ export default function DetalleConductor() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('pendientes');
 
+  // Calendario
+  const [reservasCal, setReservasCal] = useState([]);
+  const [rangoCal, setRangoCal] = useState(null);
+
+  const cargarCalendario = useCallback(async (desde, hasta) => {
+    try {
+      const { data: r } = await api.get(`/admin/conductores/${id}/calendario`, { params: { desde, hasta } });
+      setReservasCal(r);
+    } catch {}
+  }, [id]);
+
   useEffect(() => { cargar(); }, [id]);
+
+  useEffect(() => {
+    if (tab === 'calendario' && rangoCal) cargarCalendario(rangoCal.desde, rangoCal.hasta);
+  }, [tab, rangoCal, cargarCalendario]);
 
   async function cargar() {
     setLoading(true);
@@ -83,24 +99,32 @@ export default function DetalleConductor() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1">
-        <button
-          onClick={() => setTab('pendientes')}
-          className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${tab === 'pendientes' ? 'bg-primary-50 text-primary-700 border border-primary-200' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
-        >
-          <ClockIcon className="w-4 h-4" />
-          Pendientes ({pendientes.length})
-        </button>
-        <button
-          onClick={() => setTab('historial')}
-          className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${tab === 'historial' ? 'bg-primary-50 text-primary-700 border border-primary-200' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
-        >
-          <CheckCircleIcon className="w-4 h-4" />
-          Historial ({completados.length})
-        </button>
+      <div className="flex gap-1 flex-wrap">
+        {[
+          { key: 'pendientes', label: `Pendientes (${pendientes.length})`, icon: ClockIcon },
+          { key: 'calendario', label: 'Calendario', icon: CalendarDaysIcon },
+          { key: 'historial', label: `Historial (${completados.length})`, icon: CheckCircleIcon },
+        ].map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)}
+            className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${tab === t.key ? 'bg-primary-50 text-primary-700 border border-primary-200' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+          >
+            <t.icon className="w-4 h-4" />
+            {t.label}
+          </button>
+        ))}
       </div>
 
+      {/* Calendario */}
+      {tab === 'calendario' && (
+        <WeekCalendar
+          reservas={reservasCal}
+          tipo="conductor"
+          onChangeRango={({ desde, hasta }) => setRangoCal({ desde, hasta })}
+        />
+      )}
+
       {/* Tabla de servicios */}
+      {(tab === 'pendientes' || tab === 'historial') && (
       <div className="card overflow-hidden">
         <table className="w-full text-sm">
           <thead className="table-header">
@@ -146,6 +170,7 @@ export default function DetalleConductor() {
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }

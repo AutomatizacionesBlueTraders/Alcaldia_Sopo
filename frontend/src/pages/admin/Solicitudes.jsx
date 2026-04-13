@@ -1,17 +1,24 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import api from '../../api/axios';
 import EstadoBadge from '../../components/EstadoBadge';
-import { FunnelIcon, ClipboardDocumentListIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { FunnelIcon, ClipboardDocumentListIcon, ChevronLeftIcon, ChevronRightIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 
-const ESTADOS = ['', 'ENVIADA', 'PENDIENTE_PROGRAMACION', 'PROGRAMADA', 'CONFIRMADA', 'EN_EJECUCION', 'FINALIZADA', 'CANCELADA', 'RECHAZADA'];
+const ESTADOS = ['', 'PENDIENTE_PROGRAMACION', 'PROGRAMADA', 'CONFIRMADA', 'EN_EJECUCION', 'FINALIZADA', 'CANCELADA', 'RECHAZADA'];
 
 export default function AdminSolicitudes() {
+  const [searchParams] = useSearchParams();
   const [solicitudes, setSolicitudes] = useState([]);
   const [deps, setDeps] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [filtros, setFiltros] = useState({ estado: '', dependencia_id: '', canal: '', fecha_desde: '', fecha_hasta: '' });
+  const [filtros, setFiltros] = useState({
+    estado: searchParams.get('estado') || '',
+    dependencia_id: searchParams.get('dependencia_id') || '',
+    canal: searchParams.get('canal') || '',
+    fecha_desde: searchParams.get('fecha_desde') || '',
+    fecha_hasta: searchParams.get('fecha_hasta') || ''
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,6 +41,11 @@ export default function AdminSolicitudes() {
 
   return (
     <div className="space-y-6">
+      <Link to="/admin" className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 text-sm font-medium">
+        <ArrowLeftIcon className="w-4 h-4" />
+        Volver al dashboard
+      </Link>
+
       <div>
         <h2 className="page-title">Todas las Solicitudes</h2>
         <p className="text-gray-500 text-sm mt-1">{total} solicitudes en total</p>

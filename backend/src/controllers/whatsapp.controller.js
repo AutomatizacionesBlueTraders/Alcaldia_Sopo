@@ -122,13 +122,13 @@ async function crearSolicitud(req, res) {
       pasajeros: parseInt(pasajeros),
       contacto_nombre,
       contacto_telefono: contacto_telefono || telefono,
-      estado: 'ENVIADA',
+      estado: 'RECIBIDA',
       canal: 'whatsapp'
     }).returning('*');
 
     await db('historial_solicitudes').insert({
       solicitud_id: solicitud.id,
-      estado_nuevo: 'ENVIADA',
+      estado_nuevo: 'RECIBIDA',
       notas: `Creada vía WhatsApp (${telefono})`
     });
 
@@ -203,19 +203,63 @@ async function cancelarSolicitud(req, res) {
 
 async function confirmarServicio(req, res) {
   try {
-    const { solicitud_id, telefono, confirmado } = req.body;
+    const { solicitud_id, telefono, confirmado, motivo } = req.body;
 
     const solicitud = await db('solicitudes').where({ id: solicitud_id }).first();
     if (!solicitud) return res.status(404).json({ error: 'Solicitud no encontrada' });
 
-    const nuevoEstado = confirmado ? 'CONFIRMADA' : 'NO_CONFIRMADA';
-    await db('solicitudes').where({ id: solicitud_id }).update({ estado: nuevoEstado, updated_at: db.fn.now() });
+    // Solo motivo, sin cambiar estado
+    if (confirmado === undefined && motivo) {
+      await db('solicitudes').where({ id: solicitud_id }).update({ motivo_cancelacion: motivo, updated_at: db.fn.now() });
+      await db('historial_solicitudes').insert({
+        solicitud_id,
+        estado_anterior: solicitud.estado,
+        estado_nuevo: solicitud.estado,
+        notas: `Motivo registrado vía WhatsApp: ${motivo}`
+      });
+      return res.json({ ok: true, motivo });
+    }
+
+    const nuevoEstado = confirmado ? 'CONFIRMADA' : 'CANCELADA';
+
+    // Idempotente: si ya está en el estado destino, no hacer nada
+    if (solicitud.estado === nuevoEstado) {
+      return res.json({ ok: true, confirmado, ya_en_estado: true });
+    }
+
+    // Validar transiciones permitidas desde el estado actual
+    if (confirmado) {
+      // Solo se puede confirmar si fue programada (ya tiene vehículo/conductor asignado)
+      if (solicitud.estado !== 'PROGRAMADA') {
+        return res.status(400).json({
+          error: `No se puede confirmar en estado ${solicitud.estado}. La solicitud debe estar PROGRAMADA.`
+        });
+      }
+    } else {
+      // Cancelar: no se puede si ya está en curso o cerrada
+      if (['EN_EJECUCION', 'FINALIZADA', 'CANCELADA', 'RECHAZADA'].includes(solicitud.estado)) {
+        return res.status(400).json({
+          error: `No se puede cancelar en estado ${solicitud.estado}.`
+        });
+      }
+    }
+
+    const updateData = { estado: nuevoEstado, updated_at: db.fn.now() };
+    if (!confirmado) updateData.motivo_cancelacion = motivo || 'No confirmada por el solicitante vía WhatsApp';
+
+    await db('solicitudes').where({ id: solicitud_id }).update(updateData);
     await db('historial_solicitudes').insert({
       solicitud_id,
       estado_anterior: solicitud.estado,
       estado_nuevo: nuevoEstado,
-      notas: `Confirmación vía WhatsApp: ${confirmado ? 'CONFIRMADO' : 'NO CONFIRMADO'}`
+      notas: confirmado ? 'Confirmado vía WhatsApp' : `Cancelada (no confirmada) vía WhatsApp: ${motivo || 'Sin motivo'}`
     });
+
+    // Si cancelan una solicitud ya programada, liberar calendarios
+    if (!confirmado && ['PROGRAMADA', 'CONFIRMADA'].includes(solicitud.estado)) {
+      await db('calendario_vehiculos').where({ solicitud_id }).update({ estado: 'cancelado' });
+      await db('calendario_conductores').where({ solicitud_id }).update({ estado: 'cancelado' });
+    }
 
     if (telefono) {
       await db('whatsapp_sesiones').where({ telefono })
@@ -256,7 +300,7 @@ async function serviciosConductorWa(req, res) {
     const conductor = await db('conductores').where({ telefono, activo: true }).first();
     if (!conductor) return res.status(404).json({ error: 'Conductor no encontrado' });
 
-    const hoy = new Date().toISOString().split('T')[0];
+    const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
     const servicios = await db('asignaciones')
       .where({ 'asignaciones.conductor_id': conductor.id })
       .where('asignaciones.fecha', '>=', hoy)

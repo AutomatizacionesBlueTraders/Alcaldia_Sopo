@@ -130,34 +130,69 @@ async function finalizarServicio(req, res) {
   }
 }
 
-async function miVehiculo(req, res) {
+// Vehículos que el conductor tiene o tuvo asignados recientemente.
+// Incluye: servicios activos (PROGRAMADA, CONFIRMADA, EN_EJECUCION) cualquier fecha,
+// + servicios FINALIZADA de los últimos 30 días (para tanqueos tardíos).
+async function vehiculosAsignados(req, res) {
   try {
     const conductorId = await getConductorId(req.user.id);
-    // Buscar última asignación para obtener vehículo asignado
-    const ultimaAsig = await db('asignaciones')
-      .where({ conductor_id: conductorId })
-      .orderBy('fecha', 'desc')
-      .first();
+    if (!conductorId) return res.status(404).json({ error: 'Conductor no encontrado' });
 
-    if (!ultimaAsig) return res.json(null);
-    const vehiculo = await db('vehiculos').where({ id: ultimaAsig.vehiculo_id }).first();
-    res.json(vehiculo);
+    const hace30 = new Date();
+    hace30.setDate(hace30.getDate() - 30);
+    const desde = hace30.toISOString().substring(0, 10);
+
+    const filas = await db('asignaciones')
+      .join('solicitudes', 'asignaciones.solicitud_id', 'solicitudes.id')
+      .join('vehiculos', 'asignaciones.vehiculo_id', 'vehiculos.id')
+      .where('asignaciones.conductor_id', conductorId)
+      .where(function () {
+        this.whereIn('solicitudes.estado', ['PROGRAMADA', 'CONFIRMADA', 'EN_EJECUCION'])
+          .orWhere(function () {
+            this.where('solicitudes.estado', 'FINALIZADA').andWhere('asignaciones.fecha', '>=', desde);
+          });
+      })
+      .select(
+        'vehiculos.id', 'vehiculos.placa', 'vehiculos.marca', 'vehiculos.modelo',
+        'vehiculos.km_actual',
+        'asignaciones.fecha as ultima_fecha',
+        'solicitudes.estado as ultimo_estado'
+      )
+      .orderBy('asignaciones.fecha', 'desc');
+
+    // Dedup por vehiculo_id, preservando el primero (el más reciente por orderBy)
+    const vistos = new Set();
+    const unicos = [];
+    for (const f of filas) {
+      if (vistos.has(f.id)) continue;
+      vistos.add(f.id);
+      unicos.push(f);
+    }
+
+    res.json(unicos);
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener vehículo' });
+    console.error('Error vehiculosAsignados:', err);
+    res.status(500).json({ error: 'Error al obtener vehículos asignados' });
   }
 }
 
 async function registrarCombustible(req, res) {
   try {
-    const { vehiculo_id, fecha, galones, valor_cop, km_registro, ticket_url } = req.body;
+    const { vehiculo_id, fecha, galones, valor_cop, km_registro, ticket_url, tipo_combustible, no_ticket, valor_galon, observaciones } = req.body;
     if (!vehiculo_id || !fecha || !galones || !valor_cop) {
       return res.status(400).json({ error: 'Campos obligatorios: vehiculo_id, fecha, galones, valor_cop' });
     }
 
     const conductorId = await getConductorId(req.user.id);
-    const [registro] = await db('combustible').insert({
+    const insertData = {
       vehiculo_id, conductor_id: conductorId, fecha, galones, valor_cop, km_registro, ticket_url
-    }).returning('*');
+    };
+    if (tipo_combustible) insertData.tipo_combustible = tipo_combustible;
+    if (no_ticket) insertData.no_ticket = no_ticket;
+    if (valor_galon) insertData.valor_galon = valor_galon;
+    if (observaciones) insertData.observaciones = observaciones;
+
+    const [registro] = await db('combustible').insert(insertData).returning('*');
 
     res.status(201).json(registro);
   } catch (err) {
@@ -214,7 +249,7 @@ async function dashboardConductor(req, res) {
     const conductorId = await getConductorId(req.user.id);
     if (!conductorId) return res.status(404).json({ error: 'Conductor no encontrado' });
 
-    const hoy = new Date().toISOString().split('T')[0];
+    const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
     const serviciosHoy = await db('asignaciones')
       .where({ conductor_id: conductorId, fecha: hoy })
       .join('solicitudes', 'asignaciones.solicitud_id', 'solicitudes.id')
@@ -239,6 +274,6 @@ async function dashboardConductor(req, res) {
 
 module.exports = {
   misServicios, detalleServicio, iniciarServicio, finalizarServicio,
-  miVehiculo, registrarCombustible, historialCombustible,
+  vehiculosAsignados, registrarCombustible, historialCombustible,
   reportarNovedad, misNovedades, dashboardConductor
 };

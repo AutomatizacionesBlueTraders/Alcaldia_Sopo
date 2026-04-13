@@ -15,8 +15,8 @@ router.get('/servicios/:id', ...isConductor, cond.detalleServicio);
 router.post('/servicios/:id/iniciar', ...isConductor, cond.iniciarServicio);
 router.post('/servicios/:id/finalizar', ...isConductor, cond.finalizarServicio);
 
-// Vehículo asignado
-router.get('/vehiculo', ...isConductor, cond.miVehiculo);
+// Vehículos asignados (servicios activos + finalizados recientes)
+router.get('/vehiculos-asignados', ...isConductor, cond.vehiculosAsignados);
 
 // Combustible
 router.post('/combustible', ...isConductor, cond.registrarCombustible);

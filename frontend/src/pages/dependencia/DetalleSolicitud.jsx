@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
-import { ClipboardDocumentListIcon, ArrowsRightLeftIcon, XCircleIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { ClipboardDocumentListIcon, ArrowsRightLeftIcon, XCircleIcon, ClockIcon, ArrowLeftIcon, PencilSquareIcon, CheckIcon, XMarkIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import api from '../../api/axios';
 import EstadoBadge from '../../components/EstadoBadge';
 import Modal from '../../components/Modal';
@@ -8,8 +8,12 @@ import Modal from '../../components/Modal';
 export default function DetalleSolicitud() {
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const [sol, setSol] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [editando, setEditando] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const [editLoading, setEditLoading] = useState(false);
   const [cancelModal, setCancelModal] = useState(false);
   const [transferModal, setTransferModal] = useState(false);
   const [motivo, setMotivo] = useState('');
@@ -30,6 +34,50 @@ export default function DetalleSolicitud() {
       setSol(data);
     } finally {
       setLoading(false);
+    }
+  }
+
+  function iniciarEdicion() {
+    setEditForm({
+      fecha_servicio: sol.fecha_servicio?.substring(0, 10) || '',
+      horario_solicitud: sol.horario_solicitud || '',
+      origen: sol.origen || '',
+      destino: sol.destino || '',
+      pasajeros: sol.pasajeros || 1,
+      nombre_solicitante: sol.nombre_solicitante || sol.contacto_nombre || '',
+      telefono_solicitante: sol.telefono_solicitante || sol.contacto_telefono || '',
+      identificacion_solicitante: sol.identificacion_solicitante || '',
+      descripcion_recorrido: sol.descripcion_recorrido || '',
+      nombre_paciente: sol.nombre_paciente || '',
+      observaciones: sol.observaciones || '',
+    });
+    setEditando(true);
+  }
+
+  async function guardarEdicion() {
+    setEditLoading(true);
+    try {
+      await api.patch(`/solicitudes/${id}`, editForm);
+      setEditando(false);
+      setMsg('Solicitud actualizada');
+      cargar();
+    } catch (err) {
+      setMsg(err.response?.data?.error || 'Error al guardar');
+    } finally {
+      setEditLoading(false);
+    }
+  }
+
+  async function handleAprobar() {
+    setActionLoading(true);
+    try {
+      await api.patch(`/solicitudes/${id}/aprobar`);
+      setMsg('Solicitud aprobada y enviada al administrador');
+      cargar();
+    } catch (err) {
+      setMsg(err.response?.data?.error || 'Error al aprobar');
+    } finally {
+      setActionLoading(false);
     }
   }
 
@@ -70,12 +118,18 @@ export default function DetalleSolicitud() {
   );
   if (!sol) return <p className="text-red-500">Solicitud no encontrada</p>;
 
-  const puedeCancelar = ['ENVIADA', 'PENDIENTE_PROGRAMACION'].includes(sol.estado);
-  const puedeTransferir = ['ENVIADA', 'PENDIENTE_PROGRAMACION'].includes(sol.estado);
+  const puedeAprobar = sol.estado === 'RECIBIDA';
+  const puedeCancelar = ['RECIBIDA', 'PENDIENTE_PROGRAMACION'].includes(sol.estado);
+  const puedeTransferir = ['RECIBIDA', 'PENDIENTE_PROGRAMACION'].includes(sol.estado);
+  const puedeEditar = !['CANCELADA', 'RECHAZADA', 'FINALIZADA'].includes(sol.estado);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {msg && <div className="bg-green-50 text-green-700 p-3 rounded-lg text-sm border border-green-100">{msg}</div>}
+
+      <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary-600 transition-colors">
+        <ArrowLeftIcon className="w-4 h-4" /> Volver
+      </button>
 
       <div className="flex justify-between items-center">
         <div>
@@ -88,32 +142,116 @@ export default function DetalleSolicitud() {
         <EstadoBadge estado={sol.estado} />
       </div>
 
-      <div className="card p-5 space-y-3 text-sm">
-        <div className="grid grid-cols-2 gap-3">
-          <p><span className="font-medium text-gray-500">Fecha:</span> {sol.fecha_servicio?.substring(0, 10)}</p>
-          <p><span className="font-medium text-gray-500">Horario:</span> {sol.hora_inicio?.substring(0, 5)} - {sol.hora_fin_estimada?.substring(0, 5) || 'N/A'}</p>
-          <p><span className="font-medium text-gray-500">Origen:</span> {sol.origen}</p>
-          <p><span className="font-medium text-gray-500">Destino:</span> {sol.destino}</p>
-          <p><span className="font-medium text-gray-500">Pasajeros:</span> {sol.pasajeros}</p>
-          <p><span className="font-medium text-gray-500">Tipo:</span> {sol.tipo_servicio || 'N/A'}</p>
-          <p><span className="font-medium text-gray-500">Contacto:</span> {sol.contacto_nombre}</p>
-          <p><span className="font-medium text-gray-500">Teléfono:</span> {sol.contacto_telefono}</p>
-          <p><span className="font-medium text-gray-500">Canal:</span> {sol.canal}</p>
-        </div>
-        {sol.observaciones && <p><span className="font-medium text-gray-500">Observaciones:</span> {sol.observaciones}</p>}
-
-        {sol.vehiculo && (
-          <div className="pt-3 border-t border-gray-100">
-            <p className="font-medium text-gray-700 mb-1">Asignacion</p>
-            <p>Vehiculo: {sol.vehiculo.placa} — {sol.vehiculo.marca} {sol.vehiculo.modelo}</p>
-            <p>Conductor: {sol.conductor?.nombre}</p>
+      {/* Datos — modo vista o edicion */}
+      {editando ? (
+        <div className="card p-5 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Fecha del servicio</label>
+              <input type="date" value={editForm.fecha_servicio} onChange={e => setEditForm({...editForm, fecha_servicio: e.target.value})} className="input-field" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Horario solicitado</label>
+              <input type="text" value={editForm.horario_solicitud} onChange={e => setEditForm({...editForm, horario_solicitud: e.target.value})} className="input-field" placeholder="Ej: 8:00 AM a 12:00 PM" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Origen</label>
+              <input type="text" value={editForm.origen} onChange={e => setEditForm({...editForm, origen: e.target.value})} className="input-field" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Destino</label>
+              <input type="text" value={editForm.destino} onChange={e => setEditForm({...editForm, destino: e.target.value})} className="input-field" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Pasajeros</label>
+              <input type="number" min="1" value={editForm.pasajeros} onChange={e => setEditForm({...editForm, pasajeros: parseInt(e.target.value) || 1})} className="input-field" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Identificacion solicitante</label>
+              <input type="text" value={editForm.identificacion_solicitante} onChange={e => setEditForm({...editForm, identificacion_solicitante: e.target.value})} className="input-field" placeholder="Cedula" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Nombre solicitante</label>
+              <input type="text" value={editForm.nombre_solicitante} onChange={e => setEditForm({...editForm, nombre_solicitante: e.target.value})} className="input-field" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Telefono solicitante</label>
+              <input type="tel" value={editForm.telefono_solicitante} onChange={e => setEditForm({...editForm, telefono_solicitante: e.target.value})} className="input-field" />
+            </div>
           </div>
-        )}
-      </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Descripcion del recorrido</label>
+            <textarea value={editForm.descripcion_recorrido} onChange={e => setEditForm({...editForm, descripcion_recorrido: e.target.value})} rows="2" className="input-field" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Nombre del paciente</label>
+              <input type="text" value={editForm.nombre_paciente} onChange={e => setEditForm({...editForm, nombre_paciente: e.target.value})} className="input-field" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Observaciones</label>
+            <textarea value={editForm.observaciones} onChange={e => setEditForm({...editForm, observaciones: e.target.value})} rows="2" className="input-field" />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button onClick={guardarEdicion} disabled={editLoading} className="btn-primary">
+              <CheckIcon className="w-4 h-4" />
+              {editLoading ? 'Guardando...' : 'Guardar cambios'}
+            </button>
+            <button onClick={() => setEditando(false)} className="btn-secondary">
+              <XMarkIcon className="w-4 h-4" /> Cancelar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="card p-5 space-y-3 text-sm">
+          <div className="grid grid-cols-2 gap-3">
+            <p><span className="font-medium text-gray-500">Fecha del servicio:</span> {sol.fecha_servicio?.substring(0, 10)}</p>
+            <p><span className="font-medium text-gray-500">Horario solicitado:</span> {sol.horario_solicitud || 'N/A'}</p>
+            <p><span className="font-medium text-gray-500">Origen:</span> {sol.origen}</p>
+            <p><span className="font-medium text-gray-500">Destino:</span> {sol.destino}</p>
+            <p><span className="font-medium text-gray-500">Pasajeros:</span> {sol.pasajeros}</p>
+            <p><span className="font-medium text-gray-500">Canal:</span> {sol.canal}</p>
+            <p><span className="font-medium text-gray-500">Solicitante:</span> {sol.nombre_solicitante || sol.contacto_nombre || 'N/A'}</p>
+            <p><span className="font-medium text-gray-500">Telefono:</span> {sol.telefono_solicitante || sol.contacto_telefono || 'N/A'}</p>
+            {sol.identificacion_solicitante && <p><span className="font-medium text-gray-500">Identificacion:</span> {sol.identificacion_solicitante}</p>}
+          </div>
+          {sol.descripcion_recorrido && <p><span className="font-medium text-gray-500">Descripcion del recorrido:</span> {sol.descripcion_recorrido}</p>}
+          {sol.nombre_paciente && sol.nombre_paciente !== 'N/a' && <p><span className="font-medium text-gray-500">Paciente:</span> {sol.nombre_paciente}</p>}
+          {sol.observaciones && <p><span className="font-medium text-gray-500">Observaciones:</span> {sol.observaciones}</p>}
+
+          {sol.estado === 'CANCELADA' && sol.motivo_cancelacion && (
+            <div className="pt-3 border-t border-red-100 bg-red-50 -mx-5 -mb-5 px-5 py-3 rounded-b-xl">
+              <p className="font-medium text-red-700 mb-1">Motivo de cancelacion</p>
+              <p className="text-red-600">{sol.motivo_cancelacion}</p>
+            </div>
+          )}
+
+          {sol.vehiculo && (
+            <div className="pt-3 border-t border-gray-100">
+              <p className="font-medium text-gray-700 mb-1">Asignacion</p>
+              <p>Vehiculo: {sol.vehiculo.placa} — {sol.vehiculo.marca} {sol.vehiculo.modelo}</p>
+              <p>Conductor: {sol.conductor?.nombre}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Acciones */}
-      {(puedeCancelar || puedeTransferir) && (
-        <div className="flex gap-3">
+      {!editando && (
+        <div className="flex gap-3 flex-wrap">
+          {puedeAprobar && (
+            <button onClick={handleAprobar} disabled={actionLoading} className="inline-flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors">
+              <PaperAirplaneIcon className="w-4 h-4" />
+              {actionLoading ? 'Enviando...' : 'Aprobar y enviar al administrador'}
+            </button>
+          )}
+          {puedeEditar && (
+            <button onClick={iniciarEdicion} className="inline-flex items-center gap-2 px-4 py-2.5 border border-primary-200 text-primary-600 rounded-lg text-sm font-medium hover:bg-primary-50 transition-colors">
+              <PencilSquareIcon className="w-4 h-4" />
+              Editar datos
+            </button>
+          )}
           {puedeCancelar && (
             <button onClick={() => setCancelModal(true)} className="inline-flex items-center gap-2 px-4 py-2.5 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors">
               <XCircleIcon className="w-4 h-4" />

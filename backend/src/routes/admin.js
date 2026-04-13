@@ -13,6 +13,7 @@ router.get('/dashboard', ...isAdmin, sol.dashboardAdmin);
 // Solicitudes
 router.get('/solicitudes', ...isAdmin, sol.listarTodas);
 router.get('/solicitudes/:id', ...isAdmin, sol.detalle);
+router.patch('/solicitudes/:id', ...isAdmin, sol.editar);
 router.patch('/solicitudes/:id/rechazar', ...isAdmin, sol.rechazar);
 router.patch('/solicitudes/:id/cancelar', ...isAdmin, sol.cancelar);
 
@@ -50,11 +51,22 @@ router.post('/mantenimientos', ...isAdmin, admin.crearMantenimiento);
 router.patch('/mantenimientos/:id', ...isAdmin, admin.actualizarMantenimiento);
 
 // Combustible
-router.get('/combustible', ...isAdmin, admin.listarCombustible);
+router.get('/combustible',       ...isAdmin, admin.listarCombustible);
+router.post('/combustible',      ...isAdmin, admin.crearCombustible);
+router.patch('/combustible/:id', ...isAdmin, admin.actualizarCombustible);
+
+// Cambios de aceite
+router.get('/aceite',                       ...isAdmin, admin.listarEstadoAceite);
+router.post('/aceite',                      ...isAdmin, admin.crearCambioAceite);
+router.get('/aceite/vehiculo/:id/historial', ...isAdmin, admin.historialAceiteVehiculo);
 
 // Historial
 router.get('/conductores/:id/historial', ...isAdmin, admin.historialConductor);
 router.get('/vehiculos/:id/historial', ...isAdmin, admin.historialVehiculo);
+
+// Calendario (reservas por rango de fechas)
+router.get('/vehiculos/:id/calendario', ...isAdmin, admin.calendarioVehiculo);
+router.get('/conductores/:id/calendario', ...isAdmin, admin.calendarioConductor);
 
 // Catálogos
 router.get('/dependencias', ...isAdmin, admin.dependencias);

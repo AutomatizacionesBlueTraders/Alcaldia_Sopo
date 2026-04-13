@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 import EstadoBadge from '../../components/EstadoBadge';
-import { FunnelIcon, ClipboardDocumentListIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { FunnelIcon, ClipboardDocumentListIcon, ChevronLeftIcon, ChevronRightIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 
-const ESTADOS = ['', 'ENVIADA', 'PENDIENTE_PROGRAMACION', 'PROGRAMADA', 'CONFIRMADA', 'EN_EJECUCION', 'FINALIZADA', 'CANCELADA', 'TRANSFERIDA'];
+const ESTADOS = ['', 'RECIBIDA', 'PENDIENTE_PROGRAMACION', 'PROGRAMADA', 'CONFIRMADA', 'EN_EJECUCION', 'FINALIZADA', 'CANCELADA'];
 
 export default function ListaSolicitudes() {
   const [solicitudes, setSolicitudes] = useState([]);
@@ -34,6 +34,11 @@ export default function ListaSolicitudes() {
 
   return (
     <div className="space-y-6">
+      <Link to="/solicitudes" className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 text-sm font-medium">
+        <ArrowLeftIcon className="w-4 h-4" />
+        Volver al dashboard
+      </Link>
+
       <div>
         <h2 className="page-title">Mis Solicitudes</h2>
         <p className="text-gray-500 text-sm mt-1">{total} solicitudes en total</p>

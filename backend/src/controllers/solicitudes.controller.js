@@ -7,15 +7,13 @@ async function crear(req, res) {
     const {
       descripcion_recorrido, origen, destino, pasajeros,
       horario_solicitud, nombre_solicitante, telefono_solicitante,
-      nombre_paciente,
-      // Campos legacy para compatibilidad
-      hora_inicio, fecha_servicio, hora_fin_estimada, tipo_servicio,
+      identificacion_solicitante, nombre_paciente, fecha_servicio,
       contacto_nombre, contacto_telefono, observaciones,
       dependencia_id: body_dependencia_id,
       dependencia_nombre: body_dependencia_nombre
     } = req.body;
 
-    const horario = (horario_solicitud || hora_inicio || '').trim();
+    const horario = (horario_solicitud || '').trim();
 
     if (!origen || !destino || !horario) {
       return res.status(400).json({ error: 'Campos obligatorios: origen, destino, horario_solicitud' });
@@ -35,31 +33,33 @@ async function crear(req, res) {
       return res.status(400).json({ error: 'No se pudo identificar la dependencia' });
     }
 
-    const [solicitud] = await db('solicitudes').insert({
+    const insertData = {
       dependencia_id,
       usuario_id: req.user?.id || null,
-      fecha_servicio: fecha_servicio || new Date().toISOString().split('T')[0],
+      fecha_servicio: fecha_servicio || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' }),
       horario_solicitud: horario,
-      hora_fin_estimada,
-      origen,
-      destino,
-      pasajeros: pasajeros || 1,
-      tipo_servicio,
-      descripcion_recorrido,
-      nombre_solicitante: nombre_solicitante || contacto_nombre,
-      telefono_solicitante: telefono_solicitante || contacto_telefono,
-      contacto_nombre: contacto_nombre || nombre_solicitante,
-      contacto_telefono: contacto_telefono || telefono_solicitante,
-      nombre_paciente,
-      observaciones,
-      estado: 'ENVIADA',
+      origen: String(origen).trim(),
+      destino: String(destino).trim(),
+      pasajeros: parseInt(pasajeros) || 1,
+      estado: 'RECIBIDA',
       canal: req.body.canal || 'web'
-    }).returning('*');
+    };
+
+    if (descripcion_recorrido) insertData.descripcion_recorrido = String(descripcion_recorrido).trim();
+    if (nombre_solicitante || contacto_nombre) insertData.nombre_solicitante = String(nombre_solicitante || contacto_nombre).trim();
+    if (telefono_solicitante || contacto_telefono) insertData.telefono_solicitante = String(telefono_solicitante || contacto_telefono).trim();
+    if (nombre_solicitante || contacto_nombre) insertData.contacto_nombre = String(contacto_nombre || nombre_solicitante).trim();
+    if (telefono_solicitante || contacto_telefono) insertData.contacto_telefono = String(contacto_telefono || telefono_solicitante).trim();
+    if (identificacion_solicitante) insertData.identificacion_solicitante = String(identificacion_solicitante).trim();
+    if (nombre_paciente) insertData.nombre_paciente = String(nombre_paciente).trim();
+    if (observaciones) insertData.observaciones = observaciones;
+
+    const [solicitud] = await db('solicitudes').insert(insertData).returning('*');
 
     await db('historial_solicitudes').insert({
       solicitud_id: solicitud.id,
       estado_anterior: null,
-      estado_nuevo: 'ENVIADA',
+      estado_nuevo: 'RECIBIDA',
       usuario_id: req.user?.id || null,
       notas: req.body.canal === 'whatsapp' ? 'Solicitud creada vía WhatsApp' : 'Solicitud creada desde web'
     });
@@ -129,12 +129,12 @@ async function cancelar(req, res) {
       return res.status(403).json({ error: 'No tienes acceso a esta solicitud' });
     }
 
-    const permitidos = ['ENVIADA', 'PENDIENTE_PROGRAMACION'];
+    const permitidos = ['RECIBIDA', 'PENDIENTE_PROGRAMACION'];
     if (req.user.rol !== 'admin' && !permitidos.includes(solicitud.estado)) {
       return res.status(400).json({ error: `No se puede cancelar en estado ${solicitud.estado}` });
     }
 
-    await db('solicitudes').where({ id: solicitud.id }).update({ estado: 'CANCELADA', updated_at: db.fn.now() });
+    await db('solicitudes').where({ id: solicitud.id }).update({ estado: 'CANCELADA', motivo_cancelacion: motivo, updated_at: db.fn.now() });
 
     // Liberar recursos si estaba programada
     if (['PROGRAMADA', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA'].includes(solicitud.estado)) {
@@ -170,7 +170,7 @@ async function transferir(req, res) {
       return res.status(403).json({ error: 'No tienes acceso' });
     }
 
-    if (!['ENVIADA', 'PENDIENTE_PROGRAMACION'].includes(solicitud.estado)) {
+    if (!['RECIBIDA', 'PENDIENTE_PROGRAMACION'].includes(solicitud.estado)) {
       return res.status(400).json({ error: `No se puede transferir en estado ${solicitud.estado}` });
     }
 
@@ -184,16 +184,16 @@ async function transferir(req, res) {
 
     await db('solicitudes').where({ id: solicitud.id }).update({
       dependencia_id: dependencia_destino_id,
-      estado: 'TRANSFERIDA',
+      estado: 'RECIBIDA',
       updated_at: db.fn.now()
     });
 
     await db('historial_solicitudes').insert({
       solicitud_id: solicitud.id,
       estado_anterior: solicitud.estado,
-      estado_nuevo: 'TRANSFERIDA',
+      estado_nuevo: 'RECIBIDA',
       usuario_id: req.user.id,
-      notas: motivo
+      notas: `Transferida a otra dependencia: ${motivo}`
     });
 
     res.json({ message: 'Solicitud transferida' });
@@ -202,25 +202,62 @@ async function transferir(req, res) {
   }
 }
 
+async function aprobar(req, res) {
+  try {
+    const solicitud = await db('solicitudes').where({ id: req.params.id }).first();
+    if (!solicitud) return res.status(404).json({ error: 'Solicitud no encontrada' });
+
+    if (req.user.rol === 'dependencia' && solicitud.dependencia_id !== req.user.dependencia_id) {
+      return res.status(403).json({ error: 'No tienes acceso a esta solicitud' });
+    }
+
+    if (solicitud.estado !== 'RECIBIDA') {
+      return res.status(400).json({ error: `Solo se pueden aprobar solicitudes en estado RECIBIDA (actual: ${solicitud.estado})` });
+    }
+
+    await db('solicitudes').where({ id: solicitud.id }).update({ estado: 'PENDIENTE_PROGRAMACION', updated_at: db.fn.now() });
+    await db('historial_solicitudes').insert({
+      solicitud_id: solicitud.id,
+      estado_anterior: 'RECIBIDA',
+      estado_nuevo: 'PENDIENTE_PROGRAMACION',
+      usuario_id: req.user.id,
+      notas: 'Aprobada por dependencia — enviada al administrador para programacion'
+    });
+
+    res.json({ message: 'Solicitud aprobada y enviada al administrador' });
+  } catch (err) {
+    console.error('Error al aprobar solicitud:', err);
+    res.status(500).json({ error: 'Error al aprobar solicitud' });
+  }
+}
+
 // ============ ADMIN ============
 
 async function listarTodas(req, res) {
   try {
-    const { estado, dependencia_id, canal, tipo_servicio, fecha_desde, fecha_hasta, page = 1, limit = 20 } = req.query;
+    const { estado, dependencia_id, canal, fecha_desde, fecha_hasta, page = 1, limit = 20 } = req.query;
     let query = db('solicitudes')
       .leftJoin('dependencias', 'solicitudes.dependencia_id', 'dependencias.id')
       .select('solicitudes.*', 'dependencias.nombre as dependencia_nombre');
 
-    if (estado) query = query.where('solicitudes.estado', estado);
+    // Admin no ve solicitudes en estado RECIBIDA (aun no aprobadas por dependencia)
+    if (estado) {
+      query = query.where('solicitudes.estado', estado);
+    } else {
+      query = query.whereNotIn('solicitudes.estado', ['RECIBIDA']);
+    }
     if (dependencia_id) query = query.where('solicitudes.dependencia_id', dependencia_id);
     if (canal) query = query.where('solicitudes.canal', canal);
-    if (tipo_servicio) query = query.where('solicitudes.tipo_servicio', tipo_servicio);
     if (fecha_desde) query = query.where('solicitudes.fecha_servicio', '>=', fecha_desde);
     if (fecha_hasta) query = query.where('solicitudes.fecha_servicio', '<=', fecha_hasta);
 
     const offset = (page - 1) * limit;
     const countQuery = db('solicitudes');
-    if (estado) countQuery.where({ estado });
+    if (estado) {
+      countQuery.where({ estado });
+    } else {
+      countQuery.whereNotIn('estado', ['RECIBIDA']);
+    }
     if (dependencia_id) countQuery.where({ dependencia_id });
     const [{ count }] = await countQuery.count();
 
@@ -256,20 +293,21 @@ async function rechazar(req, res) {
 
 async function dashboardAdmin(req, res) {
   try {
-    const hoy = new Date().toISOString().split('T')[0];
+    const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
     const estados = await db('solicitudes')
       .select('estado')
       .count('* as total')
       .groupBy('estado');
 
-    const serviciosHoy = await db('solicitudes')
-      .where({ fecha_servicio: hoy })
-      .whereIn('estado', ['PROGRAMADA', 'CONFIRMADA', 'EN_EJECUCION', 'FINALIZADA'])
+    const serviciosHoy = await db('asignaciones')
+      .where({ 'asignaciones.fecha': hoy })
+      .join('solicitudes', 'asignaciones.solicitud_id', 'solicitudes.id')
+      .whereIn('solicitudes.estado', ['PROGRAMADA', 'CONFIRMADA', 'EN_EJECUCION', 'FINALIZADA'])
       .count('* as total')
       .first();
 
     const nuevasHoy = await db('solicitudes')
-      .where({ estado: 'ENVIADA' })
+      .where({ estado: 'PENDIENTE_PROGRAMACION' })
       .whereRaw('DATE(created_at) = ?', [hoy])
       .count('* as total')
       .first();
@@ -280,11 +318,52 @@ async function dashboardAdmin(req, res) {
       .count('* as total')
       .first();
 
+    // Aceite: vehículos donde (km_actual - km_ultimo_cambio) >= km_intervalo * 0.85
+    // (incluye los que ya pasaron el intervalo = vencidos)
+    const aceiteAlerta = await db.raw(`
+      SELECT COUNT(*) AS total FROM (
+        SELECT v.id,
+          COALESCE(v.km_intervalo_aceite, 5000) AS intervalo,
+          COALESCE((SELECT MAX(km_registro) FROM combustible WHERE vehiculo_id = v.id), 0) AS km_actual,
+          (SELECT MAX(km_cambio) FROM cambios_aceite WHERE vehiculo_id = v.id) AS km_ultimo
+        FROM vehiculos v
+        WHERE v.activo = true
+      ) x
+      WHERE x.km_ultimo IS NOT NULL
+        AND (x.km_actual - x.km_ultimo) >= (x.intervalo * 0.85)
+    `);
+    const aceiteAlertaTotal = parseInt(aceiteAlerta.rows?.[0]?.total || 0);
+
+    // Resumen del mes actual
+    const inicioMes = hoy.substring(0, 7) + '-01';
+    const solicitudesMes = await db('solicitudes')
+      .where('created_at', '>=', inicioMes)
+      .select('estado')
+      .count('* as total')
+      .groupBy('estado');
+
+    const combustibleMes = await db('combustible')
+      .where('fecha', '>=', inicioMes)
+      .select(
+        db.raw('COALESCE(SUM(galones), 0) as total_galones'),
+        db.raw('COALESCE(SUM(valor_cop), 0) as total_valor'),
+        db.raw('COUNT(*) as total_tanqueos')
+      )
+      .first();
+
     res.json({
       estados: estados.reduce((acc, e) => ({ ...acc, [e.estado]: parseInt(e.total) }), {}),
       servicios_hoy: parseInt(serviciosHoy?.total || 0),
       nuevas_hoy: parseInt(nuevasHoy?.total || 0),
       docs_por_vencer: parseInt(docsVencer?.total || 0),
+      aceite_alerta: aceiteAlertaTotal,
+      mes: {
+        solicitudes: solicitudesMes.reduce((acc, e) => ({ ...acc, [e.estado]: parseInt(e.total) }), {}),
+        solicitudes_total: solicitudesMes.reduce((s, e) => s + parseInt(e.total), 0),
+        combustible_galones: parseFloat(combustibleMes?.total_galones || 0),
+        combustible_valor: parseFloat(combustibleMes?.total_valor || 0),
+        combustible_tanqueos: parseInt(combustibleMes?.total_tanqueos || 0),
+      }
     });
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener dashboard' });
@@ -304,16 +383,210 @@ async function dashboardDependencia(req, res) {
       .orderBy('created_at', 'desc')
       .limit(10);
 
+    // Resumen del mes actual
+    const inicioMes = new Date().toISOString().substring(0, 7) + '-01';
+    const solicitudesMes = await db('solicitudes')
+      .where({ dependencia_id: req.user.dependencia_id })
+      .where('created_at', '>=', inicioMes)
+      .select('estado')
+      .count('* as total')
+      .groupBy('estado');
+
     res.json({
       estados: estados.reduce((acc, e) => ({ ...acc, [e.estado]: parseInt(e.total) }), {}),
-      recientes
+      recientes,
+      mes: {
+        solicitudes: solicitudesMes.reduce((acc, e) => ({ ...acc, [e.estado]: parseInt(e.total) }), {}),
+        solicitudes_total: solicitudesMes.reduce((s, e) => s + parseInt(e.total), 0),
+      }
     });
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener dashboard' });
   }
 }
 
+async function detallePorApiKey(req, res) {
+  try {
+    const solicitud = await db('solicitudes')
+      .leftJoin('dependencias', 'solicitudes.dependencia_id', 'dependencias.id')
+      .select('solicitudes.*', 'dependencias.nombre as dependencia_nombre')
+      .where('solicitudes.id', req.params.id)
+      .first();
+
+    if (!solicitud) return res.status(404).json({ error: 'Solicitud no encontrada' });
+
+    const asignacion = await db('asignaciones').where({ solicitud_id: solicitud.id }).first();
+
+    let vehiculo = null, conductor = null;
+    if (asignacion) {
+      vehiculo = await db('vehiculos').where({ id: asignacion.vehiculo_id }).first();
+      conductor = await db('conductores').where({ id: asignacion.conductor_id }).first();
+    }
+
+    // Helpers de formato
+    const ymd = (d) => {
+      if (!d) return null;
+      if (d instanceof Date) return d.toISOString().substring(0, 10);
+      return String(d).substring(0, 10);
+    };
+    const hhmm = (h) => h ? String(h).substring(0, 5) : null;
+
+    // Shape plano y consistente con el payload del webhook de programación
+    const payload = {
+      solicitud_id: solicitud.id,
+      estado: solicitud.estado,
+      // Solicitante
+      solicitante_nombre: solicitud.nombre_solicitante || solicitud.contacto_nombre || null,
+      solicitante_telefono: solicitud.telefono_solicitante || solicitud.contacto_telefono || null,
+      telefono_solicitante: solicitud.telefono_solicitante || solicitud.contacto_telefono || null,
+      solicitante_identificacion: solicitud.identificacion_solicitante || null,
+      // Dependencia
+      dependencia_id: solicitud.dependencia_id,
+      dependencia_nombre: solicitud.dependencia_nombre || null,
+      // Recorrido
+      origen: solicitud.origen,
+      destino: solicitud.destino,
+      descripcion_recorrido: solicitud.descripcion_recorrido || null,
+      pasajeros: solicitud.pasajeros,
+      nombre_paciente: solicitud.nombre_paciente || null,
+      observaciones: solicitud.observaciones || null,
+      motivo_cancelacion: solicitud.motivo_cancelacion || null,
+      // Horario
+      horario_solicitud: solicitud.horario_solicitud || null,
+      fecha_servicio_original: ymd(solicitud.fecha_servicio),
+      // Asignación "efectiva" (si ya fue programada): valores actuales
+      fecha: asignacion ? ymd(asignacion.fecha) : ymd(solicitud.fecha_servicio),
+      hora_inicio: asignacion ? hhmm(asignacion.hora_inicio) : null,
+      hora_fin: asignacion ? hhmm(asignacion.hora_fin) : null,
+      // Conductor (si ya fue asignado)
+      conductor_id: conductor?.id || null,
+      conductor_nombre: conductor?.nombre || null,
+      conductor_telefono: conductor?.telefono || null,
+      // Vehículo (si ya fue asignado)
+      vehiculo_id: vehiculo?.id || null,
+      vehiculo_placa: vehiculo?.placa || null,
+      vehiculo_marca: vehiculo?.marca || null,
+      vehiculo_modelo: vehiculo?.modelo || null,
+      // KMs del servicio (solo si ya terminó)
+      km_inicial: asignacion?.km_inicial || null,
+      km_final: asignacion?.km_final || null,
+      // Timestamps
+      created_at: solicitud.created_at,
+      updated_at: solicitud.updated_at
+    };
+
+    res.json(payload);
+  } catch (err) {
+    console.error('Error al obtener solicitud por API Key:', err);
+    res.status(500).json({ error: 'Error al obtener solicitud' });
+  }
+}
+
+async function cancelarPorApiKey(req, res) {
+  try {
+    const { solicitud_id, identificacion, motivo } = req.body;
+
+    if (!solicitud_id || !identificacion || !motivo) {
+      return res.status(400).json({ error: 'Campos obligatorios: solicitud_id, identificacion, motivo' });
+    }
+
+    const solicitud = await db('solicitudes').where({ id: solicitud_id }).first();
+    if (!solicitud) return res.status(404).json({ error: 'Solicitud no encontrada' });
+
+    const idSol = (solicitud.identificacion_solicitante || '').trim();
+    if (!idSol || idSol !== String(identificacion).trim()) {
+      return res.status(403).json({ error: 'La identificacion no coincide con la solicitud. No se puede realizar la cancelacion.' });
+    }
+
+    // Idempotente: si ya está cancelada y la identificación coincide, respondemos OK
+    // sin volver a escribir. Evita errores en reintentos del bot.
+    if (solicitud.estado === 'CANCELADA') {
+      return res.json({
+        ok: true,
+        mensaje: `Solicitud #${solicitud.id} ya estaba cancelada`,
+        motivo: solicitud.motivo_cancelacion || motivo,
+        ya_cancelada: true
+      });
+    }
+
+    if (['RECHAZADA', 'FINALIZADA', 'EN_EJECUCION'].includes(solicitud.estado)) {
+      return res.status(400).json({ error: `No se puede cancelar en estado ${solicitud.estado}` });
+    }
+
+    await db('solicitudes').where({ id: solicitud.id }).update({
+      estado: 'CANCELADA',
+      motivo_cancelacion: motivo,
+      updated_at: db.fn.now()
+    });
+
+    await db('historial_solicitudes').insert({
+      solicitud_id: solicitud.id,
+      estado_anterior: solicitud.estado,
+      estado_nuevo: 'CANCELADA',
+      notas: motivo
+    });
+
+    if (['PROGRAMADA', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA'].includes(solicitud.estado)) {
+      await db('calendario_vehiculos').where({ solicitud_id: solicitud.id }).update({ estado: 'cancelado' });
+      await db('calendario_conductores').where({ solicitud_id: solicitud.id }).update({ estado: 'cancelado' });
+    }
+
+    res.json({ ok: true, mensaje: `Solicitud #${solicitud.id} cancelada exitosamente`, motivo });
+  } catch (err) {
+    console.error('Error al cancelar solicitud por API Key:', err);
+    res.status(500).json({ error: 'Error al cancelar solicitud' });
+  }
+}
+
+async function editar(req, res) {
+  try {
+    const solicitud = await db('solicitudes').where({ id: req.params.id }).first();
+    if (!solicitud) return res.status(404).json({ error: 'Solicitud no encontrada' });
+
+    if (req.user.rol === 'dependencia' && solicitud.dependencia_id !== req.user.dependencia_id) {
+      return res.status(403).json({ error: 'No tienes acceso a esta solicitud' });
+    }
+
+    const campos = [
+      'fecha_servicio', 'origen', 'destino', 'pasajeros', 'horario_solicitud',
+      'descripcion_recorrido', 'nombre_solicitante', 'telefono_solicitante',
+      'identificacion_solicitante', 'nombre_paciente', 'observaciones',
+      'dependencia_id', 'contacto_nombre', 'contacto_telefono'
+    ];
+
+    const updateData = {};
+    for (const campo of campos) {
+      if (req.body[campo] !== undefined) {
+        updateData[campo] = req.body[campo];
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ error: 'No se enviaron campos para actualizar' });
+    }
+
+    updateData.updated_at = db.fn.now();
+
+    await db('solicitudes').where({ id: solicitud.id }).update(updateData);
+
+    await db('historial_solicitudes').insert({
+      solicitud_id: solicitud.id,
+      estado_anterior: solicitud.estado,
+      estado_nuevo: solicitud.estado,
+      usuario_id: req.user.id,
+      notas: 'Datos de solicitud editados'
+    });
+
+    const actualizada = await db('solicitudes').where({ id: solicitud.id }).first();
+    res.json(actualizada);
+  } catch (err) {
+    console.error('Error al editar solicitud:', err);
+    res.status(500).json({ error: 'Error al editar solicitud' });
+  }
+}
+
 module.exports = {
-  crear, listarPorDependencia, detalle, cancelar, transferir,
-  listarTodas, rechazar, dashboardAdmin, dashboardDependencia
+  crear, listarPorDependencia, detalle, cancelar, transferir, editar, aprobar,
+  listarTodas, rechazar, dashboardAdmin, dashboardDependencia,
+  detallePorApiKey, cancelarPorApiKey
 };

@@ -13,17 +13,12 @@ import {
 
 export default function ConductorDashboard() {
   const [data, setData] = useState({ servicios_hoy: [], novedades_pendientes: 0 });
-  const [vehiculo, setVehiculo] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      api.get('/conductor/dashboard'),
-      api.get('/conductor/vehiculo')
-    ]).then(([d, v]) => {
-      setData(d.data);
-      setVehiculo(v.data);
-    }).finally(() => setLoading(false));
+    api.get('/conductor/dashboard')
+      .then(r => setData(r.data))
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading) return (
@@ -40,7 +35,7 @@ export default function ConductorDashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-5">
           <div className="flex items-center gap-3 mb-3">
             <div className="bg-indigo-100 w-10 h-10 rounded-lg flex items-center justify-center">
@@ -59,18 +54,6 @@ export default function ConductorDashboard() {
           </div>
           <p className="text-3xl font-bold text-orange-700">{data.novedades_pendientes}</p>
         </div>
-        {vehiculo && (
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="bg-gray-200 w-10 h-10 rounded-lg flex items-center justify-center">
-                <TruckIcon className="w-5 h-5 text-gray-600" />
-              </div>
-              <span className="text-sm text-gray-600">Mi vehículo</span>
-            </div>
-            <p className="text-xl font-bold text-gray-800 font-mono">{vehiculo.placa}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{vehiculo.marca} {vehiculo.modelo} &mdash; {parseFloat(vehiculo.km_actual || 0).toLocaleString()} km</p>
-          </div>
-        )}
       </div>
 
       {/* Servicios de hoy */}

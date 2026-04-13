@@ -23,7 +23,6 @@ const NAV_ITEMS = {
     { to: '/admin/solicitudes', label: 'Solicitudes', icon: ClipboardDocumentListIcon },
     { to: '/admin/vehiculos', label: 'Vehículos', icon: TruckIcon },
     { to: '/admin/conductores', label: 'Conductores', icon: UsersIcon },
-    { to: '/admin/documentos', label: 'Documentos', icon: DocumentTextIcon },
     { to: '/admin/novedades', label: 'Novedades', icon: ExclamationTriangleIcon },
     { to: '/admin/combustible', label: 'Combustible', icon: BoltIcon },
   ],
