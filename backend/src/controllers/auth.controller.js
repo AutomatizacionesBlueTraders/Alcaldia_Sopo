@@ -28,11 +28,6 @@ async function login(req, res) {
 
     const tokens = generateTokens(user);
 
-    await db('usuarios').where({ id: user.id }).update({
-      refresh_token: tokens.refreshToken,
-      updated_at: db.fn.now()
-    });
-
     let dependencia_nombre = null;
     if (user.dependencia_id) {
       const dep = await db('dependencias').where({ id: user.dependencia_id }).first();
@@ -56,17 +51,12 @@ async function refresh(req, res) {
     }
 
     const payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-    const user = await db('usuarios').where({ id: payload.id, refresh_token: refreshToken, activo: true }).first();
+    const user = await db('usuarios').where({ id: payload.id, activo: true }).first();
     if (!user) {
       return res.status(401).json({ error: 'Refresh token inválido' });
     }
 
     const tokens = generateTokens(user);
-    await db('usuarios').where({ id: user.id }).update({
-      refresh_token: tokens.refreshToken,
-      updated_at: db.fn.now()
-    });
-
     res.json(tokens);
   } catch (err) {
     res.status(401).json({ error: 'Refresh token inválido o expirado' });
@@ -74,15 +64,9 @@ async function refresh(req, res) {
 }
 
 async function logout(req, res) {
-  try {
-    await db('usuarios').where({ id: req.user.id }).update({
-      refresh_token: null,
-      updated_at: db.fn.now()
-    });
-    res.json({ message: 'Sesión cerrada' });
-  } catch (err) {
-    res.status(500).json({ error: 'Error interno del servidor' });
-  }
+  // Logout es sólo del lado del cliente (sessionStorage.clear en el front).
+  // No tocamos BD para no invalidar otras sesiones concurrentes del mismo usuario.
+  res.json({ message: 'Sesión cerrada' });
 }
 
 async function me(req, res) {

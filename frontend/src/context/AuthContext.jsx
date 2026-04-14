@@ -3,11 +3,29 @@ import api from '../api/axios';
 
 const AuthContext = createContext(null);
 
+// window.name es per-pestaña REAL: no se hereda al abrir una nueva pestaña con
+// Ctrl+Click o target=_blank (a diferencia de sessionStorage). Al montar, si la
+// pestaña no tiene marca pero sí hay tokens en sessionStorage, esos tokens fueron
+// heredados de otra pestaña y los descartamos para que cada dependencia tenga
+// su propia sesión aislada.
+const TAB_MARKER_PREFIX = 'sopo-tab-';
+function ensureTabIsolation() {
+  if (!window.name || !window.name.startsWith(TAB_MARKER_PREFIX)) {
+    const heredaTokens = sessionStorage.getItem('accessToken');
+    if (heredaTokens) {
+      sessionStorage.removeItem('accessToken');
+      sessionStorage.removeItem('refreshToken');
+    }
+    window.name = TAB_MARKER_PREFIX + (crypto.randomUUID?.() || Date.now());
+  }
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    ensureTabIsolation();
     const token = sessionStorage.getItem('accessToken');
     if (token) {
       api.get('/auth/me')
