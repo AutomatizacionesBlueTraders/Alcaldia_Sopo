@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ClipboardDocumentListIcon, CalendarDaysIcon, ArrowPathIcon, XCircleIcon, NoSymbolIcon, ClockIcon, ArrowLeftIcon, PencilSquareIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ClipboardDocumentListIcon, CalendarDaysIcon, ArrowPathIcon, XCircleIcon, NoSymbolIcon, ClockIcon, ArrowLeftIcon, PencilSquareIcon, CheckIcon, XMarkIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
 import api from '../../api/axios';
 import EstadoBadge from '../../components/EstadoBadge';
 import Modal from '../../components/Modal';
@@ -193,6 +193,16 @@ export default function DetalleSolicitudAdmin() {
     finally { setActionLoading(false); }
   }
 
+  async function handleReabrir() {
+    if (!confirm('¿Reabrir esta solicitud? Pasará a estado "Pendiente programación".')) return;
+    setActionLoading(true);
+    try {
+      await api.patch(`/admin/solicitudes/${id}/reabrir`, {});
+      setMsg('Solicitud reabierta. Estado: pendiente programación'); cargar();
+    } catch (err) { setMsg(err.response?.data?.error || 'Error al reabrir'); }
+    finally { setActionLoading(false); }
+  }
+
   if (loading) return (
     <div className="flex items-center justify-center py-12">
       <div className="animate-spin w-6 h-6 border-4 border-primary-200 border-t-primary-600 rounded-full mx-auto" />
@@ -203,6 +213,8 @@ export default function DetalleSolicitudAdmin() {
   const puedeProgramar = sol.estado === 'PENDIENTE_PROGRAMACION';
   const puedeReprogramar = ['PROGRAMADA', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA', 'EN_EJECUCION'].includes(sol.estado) && sol.asignacion;
   const puedeEditar = !['CANCELADA', 'RECHAZADA', 'FINALIZADA'].includes(sol.estado);
+  const puedeCancelar = !['CANCELADA', 'RECHAZADA', 'FINALIZADA'].includes(sol.estado);
+  const puedeReabrir = ['CANCELADA', 'RECHAZADA'].includes(sol.estado);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -345,10 +357,18 @@ export default function DetalleSolicitudAdmin() {
             {sol.estado === 'EN_EJECUCION' ? 'Cambiar asignacion' : 'Reprogramar'}
           </button>
         )}
-        <button onClick={() => setCancelModal(true)} className="inline-flex items-center gap-2 px-4 py-2.5 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors">
-          <XCircleIcon className="w-4 h-4" />
-          Cancelar
-        </button>
+        {puedeCancelar && (
+          <button onClick={() => setCancelModal(true)} className="inline-flex items-center gap-2 px-4 py-2.5 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors">
+            <XCircleIcon className="w-4 h-4" />
+            Cancelar
+          </button>
+        )}
+        {puedeReabrir && (
+          <button onClick={handleReabrir} disabled={actionLoading} className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors">
+            <ArrowUturnLeftIcon className="w-4 h-4" />
+            Reabrir
+          </button>
+        )}
         {puedeProgramar && (
           <button onClick={() => setRechazarModal(true)} className="btn-secondary">
             <NoSymbolIcon className="w-4 h-4" />

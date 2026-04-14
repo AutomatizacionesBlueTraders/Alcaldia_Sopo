@@ -12,7 +12,17 @@ import {
   ArrowRightIcon,
   CalendarDaysIcon,
   BeakerIcon,
+  XCircleIcon,
+  ChatBubbleLeftEllipsisIcon,
 } from '@heroicons/react/24/outline';
+
+function tiempoRelativo(fecha) {
+  const diff = Math.floor((Date.now() - new Date(fecha).getTime()) / 1000);
+  if (diff < 60) return 'hace instantes';
+  if (diff < 3600) return `hace ${Math.floor(diff / 60)} min`;
+  if (diff < 86400) return `hace ${Math.floor(diff / 3600)} h`;
+  return `hace ${Math.floor(diff / 86400)} días`;
+}
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -33,17 +43,38 @@ export default function AdminDashboard() {
   const [data, setData] = useState(null);
   const [servicios, setServicios] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [revisandoId, setRevisandoId] = useState(null);
 
-  useEffect(() => {
+  async function cargar() {
     const hoy = new Date().toLocaleDateString('en-CA');
-    Promise.all([
+    const [d, s] = await Promise.all([
       api.get('/admin/dashboard'),
       api.get('/admin/calendario', { params: { fecha: hoy } })
-    ]).then(([d, s]) => {
-      setData(d.data);
-      setServicios(s.data);
-    }).catch(() => {}).finally(() => setLoading(false));
+    ]);
+    setData(d.data);
+    setServicios(s.data);
+  }
+
+  useEffect(() => {
+    cargar().catch(() => {}).finally(() => setLoading(false));
   }, []);
+
+  async function marcarRevisada(e, id) {
+    e.preventDefault();
+    e.stopPropagation();
+    setRevisandoId(id);
+    try {
+      await api.patch(`/admin/solicitudes/${id}/marcar-revisada`);
+      setData(prev => ({
+        ...prev,
+        canceladas_24h: prev.canceladas_24h.filter(c => c.id !== id)
+      }));
+    } catch (err) {
+      alert(err.response?.data?.error || 'Error al marcar revisada');
+    } finally {
+      setRevisandoId(null);
+    }
+  }
 
   if (loading) return (
     <div className="flex items-center justify-center py-20">
@@ -109,6 +140,56 @@ export default function AdminDashboard() {
           );
         })}
       </div>
+
+      {/* Cancelaciones pendientes de revisión */}
+      {data?.canceladas_24h?.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="relative">
+              <XCircleIcon className="w-6 h-6 text-red-600" />
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
+            </div>
+            <h3 className="section-title text-red-700 !mb-0">
+              Cancelaciones sin revisar ({data.canceladas_24h.length})
+            </h3>
+            <span className="text-xs text-red-500 ml-auto">Marca cada una como revisada para retirarla del panel</span>
+          </div>
+          <div className="space-y-2">
+            {data.canceladas_24h.map(c => (
+              <div
+                key={c.id}
+                className="flex items-center gap-3 bg-white rounded-lg px-4 py-3 border border-red-100 hover:border-red-300 hover:shadow-sm transition-all"
+              >
+                <Link to={`/admin/solicitudes/${c.id}`} className="flex-1 min-w-0 block">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="font-semibold text-red-700">#{c.id}</span>
+                    <span className="text-xs text-gray-500">{c.dependencia_nombre || 'Sin dependencia'}</span>
+                    {c.canal === 'whatsapp' && (
+                      <span className="inline-flex items-center gap-1 text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">
+                        <ChatBubbleLeftEllipsisIcon className="w-3 h-3" /> WhatsApp
+                      </span>
+                    )}
+                    <span className="text-xs text-gray-400 ml-auto">{tiempoRelativo(c.updated_at)}</span>
+                  </div>
+                  <p className="text-sm text-gray-700 truncate">{c.origen} → {c.destino}</p>
+                  {c.motivo_cancelacion && (
+                    <p className="text-xs text-red-600 mt-1 truncate italic">"{c.motivo_cancelacion}"</p>
+                  )}
+                </Link>
+                <button
+                  onClick={(e) => marcarRevisada(e, c.id)}
+                  disabled={revisandoId === c.id}
+                  className="shrink-0 inline-flex items-center gap-1.5 bg-white border border-red-300 text-red-700 hover:bg-red-600 hover:text-white hover:border-red-600 px-3 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                  title="Marcar como revisada"
+                >
+                  <CheckCircleIcon className="w-4 h-4" />
+                  {revisandoId === c.id ? 'Marcando...' : 'Revisada'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Resumen del mes */}
       <div>

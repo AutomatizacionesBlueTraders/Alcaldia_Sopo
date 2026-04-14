@@ -134,7 +134,12 @@ async function cancelar(req, res) {
       return res.status(400).json({ error: `No se puede cancelar en estado ${solicitud.estado}` });
     }
 
-    await db('solicitudes').where({ id: solicitud.id }).update({ estado: 'CANCELADA', motivo_cancelacion: motivo, updated_at: db.fn.now() });
+    await db('solicitudes').where({ id: solicitud.id }).update({
+      estado: 'CANCELADA',
+      motivo_cancelacion: motivo,
+      cancelacion_revisada: false,
+      updated_at: db.fn.now()
+    });
 
     // Liberar recursos si estaba programada
     if (['PROGRAMADA', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA'].includes(solicitud.estado)) {
@@ -291,6 +296,55 @@ async function rechazar(req, res) {
   }
 }
 
+async function marcarCancelacionRevisada(req, res) {
+  try {
+    const solicitud = await db('solicitudes').where({ id: req.params.id }).first();
+    if (!solicitud) return res.status(404).json({ error: 'Solicitud no encontrada' });
+    if (solicitud.estado !== 'CANCELADA') {
+      return res.status(400).json({ error: 'Solo se pueden revisar solicitudes canceladas' });
+    }
+    await db('solicitudes').where({ id: solicitud.id }).update({
+      cancelacion_revisada: true,
+      updated_at: db.fn.now()
+    });
+    res.json({ message: 'Cancelación marcada como revisada' });
+  } catch (err) {
+    console.error('Error al marcar cancelación revisada:', err);
+    res.status(500).json({ error: 'Error al marcar cancelación' });
+  }
+}
+
+async function reabrir(req, res) {
+  try {
+    const solicitud = await db('solicitudes').where({ id: req.params.id }).first();
+    if (!solicitud) return res.status(404).json({ error: 'Solicitud no encontrada' });
+
+    if (!['CANCELADA', 'RECHAZADA'].includes(solicitud.estado)) {
+      return res.status(400).json({ error: `Solo se puede reabrir una solicitud cancelada o rechazada (actual: ${solicitud.estado})` });
+    }
+
+    await db('solicitudes').where({ id: solicitud.id }).update({
+      estado: 'PENDIENTE_PROGRAMACION',
+      motivo_cancelacion: null,
+      cancelacion_revisada: true,
+      updated_at: db.fn.now()
+    });
+
+    await db('historial_solicitudes').insert({
+      solicitud_id: solicitud.id,
+      estado_anterior: solicitud.estado,
+      estado_nuevo: 'PENDIENTE_PROGRAMACION',
+      usuario_id: req.user.id,
+      notas: req.body?.motivo || 'Solicitud reabierta por administrador'
+    });
+
+    res.json({ message: 'Solicitud reabierta' });
+  } catch (err) {
+    console.error('Error al reabrir solicitud:', err);
+    res.status(500).json({ error: 'Error al reabrir solicitud' });
+  }
+}
+
 async function dashboardAdmin(req, res) {
   try {
     const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
@@ -351,12 +405,29 @@ async function dashboardAdmin(req, res) {
       )
       .first();
 
+    // Cancelaciones pendientes de revisión (desde WhatsApp o desde el panel)
+    const cancelacionesRecientes = await db('solicitudes')
+      .leftJoin('dependencias', 'solicitudes.dependencia_id', 'dependencias.id')
+      .where('solicitudes.estado', 'CANCELADA')
+      .where('solicitudes.cancelacion_revisada', false)
+      .select(
+        'solicitudes.id',
+        'solicitudes.origen',
+        'solicitudes.destino',
+        'solicitudes.motivo_cancelacion',
+        'solicitudes.updated_at',
+        'solicitudes.canal',
+        'dependencias.nombre as dependencia_nombre'
+      )
+      .orderBy('solicitudes.updated_at', 'desc');
+
     res.json({
       estados: estados.reduce((acc, e) => ({ ...acc, [e.estado]: parseInt(e.total) }), {}),
       servicios_hoy: parseInt(serviciosHoy?.total || 0),
       nuevas_hoy: parseInt(nuevasHoy?.total || 0),
       docs_por_vencer: parseInt(docsVencer?.total || 0),
       aceite_alerta: aceiteAlertaTotal,
+      canceladas_24h: cancelacionesRecientes,
       mes: {
         solicitudes: solicitudesMes.reduce((acc, e) => ({ ...acc, [e.estado]: parseInt(e.total) }), {}),
         solicitudes_total: solicitudesMes.reduce((s, e) => s + parseInt(e.total), 0),
@@ -516,6 +587,7 @@ async function cancelarPorApiKey(req, res) {
     await db('solicitudes').where({ id: solicitud.id }).update({
       estado: 'CANCELADA',
       motivo_cancelacion: motivo,
+      cancelacion_revisada: false,
       updated_at: db.fn.now()
     });
 
@@ -587,6 +659,6 @@ async function editar(req, res) {
 
 module.exports = {
   crear, listarPorDependencia, detalle, cancelar, transferir, editar, aprobar,
-  listarTodas, rechazar, dashboardAdmin, dashboardDependencia,
+  listarTodas, rechazar, reabrir, marcarCancelacionRevisada, dashboardAdmin, dashboardDependencia,
   detallePorApiKey, cancelarPorApiKey
 };

@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const db = require('./config/db');
 const authRoutes = require('./routes/auth');
 const solicitudesRoutes = require('./routes/solicitudes');
@@ -36,9 +37,26 @@ app.use('/api/catalogos', catalogosRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/conocimiento', conocimientoRoutes);
 
-// Start
-app.listen(PORT, () => {
-  console.log(`Backend running on port ${PORT}`);
-});
+// Start: aplica migraciones pendientes y arranca el servidor
+(async () => {
+  try {
+    const [, pendientes] = await db.migrate.latest({
+      directory: path.join(__dirname, 'db', 'migrations')
+    });
+    if (pendientes && pendientes.length) {
+      console.log(`Migraciones aplicadas: ${pendientes.length}`);
+      pendientes.forEach(m => console.log(`  - ${m}`));
+    } else {
+      console.log('Base de datos al día (sin migraciones pendientes)');
+    }
+  } catch (err) {
+    console.error('Error al aplicar migraciones:', err);
+    process.exit(1);
+  }
+
+  app.listen(PORT, () => {
+    console.log(`Backend running on port ${PORT}`);
+  });
+})();
 
 module.exports = app;

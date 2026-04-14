@@ -16,6 +16,8 @@ router.get('/solicitudes/:id', ...isAdmin, sol.detalle);
 router.patch('/solicitudes/:id', ...isAdmin, sol.editar);
 router.patch('/solicitudes/:id/rechazar', ...isAdmin, sol.rechazar);
 router.patch('/solicitudes/:id/cancelar', ...isAdmin, sol.cancelar);
+router.patch('/solicitudes/:id/reabrir', ...isAdmin, sol.reabrir);
+router.patch('/solicitudes/:id/marcar-revisada', ...isAdmin, sol.marcarCancelacionRevisada);
 
 // Programación
 router.get('/vehiculos/disponibles', ...isAdmin, prog.vehiculosDisponibles);
