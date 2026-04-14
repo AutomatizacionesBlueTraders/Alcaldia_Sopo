@@ -54,18 +54,46 @@ exports.seed = async function(knex) {
   const hash = await bcrypt.hash('Sopo2026*', 10);
 
   await knex('usuarios').insert([
+    // Admin
     { id: 1, nombre: 'Administradora Transporte', email: 'admin@sopo.gov.co', password_hash: hash, rol: 'admin', dependencia_id: 1 },
-    { id: 2, nombre: 'Funcionario Infraestructura', email: 'infra@sopo.gov.co', password_hash: hash, rol: 'dependencia', dependencia_id: 3 },
-    { id: 3, nombre: 'Funcionario Gobierno', email: 'gobierno@sopo.gov.co', password_hash: hash, rol: 'dependencia', dependencia_id: 2 },
-    { id: 4, nombre: 'Funcionario Cultura', email: 'cultura@sopo.gov.co', password_hash: hash, rol: 'dependencia', dependencia_id: 7 },
-    { id: 5, nombre: 'Carlos Rodríguez', email: 'conductor1@sopo.gov.co', password_hash: hash, rol: 'conductor', dependencia_id: 1 },
-    { id: 6, nombre: 'Miguel Ángel Torres', email: 'conductor2@sopo.gov.co', password_hash: hash, rol: 'conductor', dependencia_id: 1 },
+    // Conductores (IDs bajos porque se referencian desde 'conductores' más abajo)
+    { id: 2, nombre: 'Carlos Rodríguez',      email: 'conductor1@sopo.gov.co', password_hash: hash, rol: 'conductor', dependencia_id: 1 },
+    { id: 3, nombre: 'Miguel Ángel Torres',   email: 'conductor2@sopo.gov.co', password_hash: hash, rol: 'conductor', dependencia_id: 1 },
+    // Dependencias — uno por cada secretaría/oficina (password: Sopo2026*)
+    { id: 4,  nombre: 'Funcionario Desarrollo Institucional', email: 'desarrollo-inst@sopo.gov.co', password_hash: hash, rol: 'dependencia', dependencia_id: 1 },
+    { id: 5,  nombre: 'Funcionario Gobierno',                 email: 'gobierno@sopo.gov.co',        password_hash: hash, rol: 'dependencia', dependencia_id: 2 },
+    { id: 6,  nombre: 'Funcionario Infraestructura',          email: 'infra@sopo.gov.co',           password_hash: hash, rol: 'dependencia', dependencia_id: 3 },
+    { id: 7,  nombre: 'Funcionario Desarrollo Económico',     email: 'desarrollo-eco@sopo.gov.co',  password_hash: hash, rol: 'dependencia', dependencia_id: 4 },
+    { id: 8,  nombre: 'Funcionario Ambiente',                 email: 'ambiente@sopo.gov.co',        password_hash: hash, rol: 'dependencia', dependencia_id: 5 },
+    { id: 9,  nombre: 'Funcionario Movilidad',                email: 'movilidad@sopo.gov.co',       password_hash: hash, rol: 'dependencia', dependencia_id: 6 },
+    { id: 10, nombre: 'Funcionario Cultura',                  email: 'cultura@sopo.gov.co',         password_hash: hash, rol: 'dependencia', dependencia_id: 7 },
+    { id: 11, nombre: 'Funcionario Agropecuaria',             email: 'agropecuaria@sopo.gov.co',    password_hash: hash, rol: 'dependencia', dependencia_id: 8 },
+    { id: 12, nombre: 'Funcionario Deportes',                 email: 'deportes@sopo.gov.co',        password_hash: hash, rol: 'dependencia', dependencia_id: 9 },
+    { id: 13, nombre: 'Despacho del Alcalde',                 email: 'alcalde@sopo.gov.co',         password_hash: hash, rol: 'dependencia', dependencia_id: 10 },
+    { id: 14, nombre: 'Funcionario Salud',                    email: 'salud@sopo.gov.co',           password_hash: hash, rol: 'dependencia', dependencia_id: 11 },
+    { id: 15, nombre: 'Funcionario Desarrollo Social',        email: 'desarrollo-social@sopo.gov.co', password_hash: hash, rol: 'dependencia', dependencia_id: 12 },
+    { id: 16, nombre: 'Funcionario Educación',                email: 'educacion@sopo.gov.co',       password_hash: hash, rol: 'dependencia', dependencia_id: 13 },
+    { id: 17, nombre: 'Funcionario Almacén General',          email: 'almacen@sopo.gov.co',         password_hash: hash, rol: 'dependencia', dependencia_id: 14 },
+    { id: 18, nombre: 'Funcionario Urbanismo',                email: 'urbanismo@sopo.gov.co',       password_hash: hash, rol: 'dependencia', dependencia_id: 15 },
+    { id: 19, nombre: 'Funcionario Planeación Estratégica',   email: 'planeacion@sopo.gov.co',      password_hash: hash, rol: 'dependencia', dependencia_id: 16 },
+    { id: 20, nombre: 'Funcionario Dirección de Vivienda',    email: 'vivienda@sopo.gov.co',        password_hash: hash, rol: 'dependencia', dependencia_id: 17 },
+    { id: 21, nombre: 'Funcionario Dirección de Turismo',     email: 'turismo@sopo.gov.co',         password_hash: hash, rol: 'dependencia', dependencia_id: 18 },
+    { id: 22, nombre: 'Oficina de Comunicaciones',            email: 'comunicaciones@sopo.gov.co',  password_hash: hash, rol: 'dependencia', dependencia_id: 19 },
+    { id: 23, nombre: 'Funcionario Ciencia y Tecnología',     email: 'cienciaytech@sopo.gov.co',    password_hash: hash, rol: 'dependencia', dependencia_id: 20 },
+    { id: 24, nombre: 'Inspección de Policía',                email: 'policia@sopo.gov.co',         password_hash: hash, rol: 'dependencia', dependencia_id: 21 },
+    { id: 25, nombre: 'Mujer, Equidad y Género',              email: 'mujer@sopo.gov.co',           password_hash: hash, rol: 'dependencia', dependencia_id: 22 },
+    { id: 26, nombre: 'Concejo Municipal',                    email: 'concejo@sopo.gov.co',         password_hash: hash, rol: 'dependencia', dependencia_id: 23 },
+    { id: 27, nombre: 'Comisaría de Familia 1',               email: 'comisaria1@sopo.gov.co',      password_hash: hash, rol: 'dependencia', dependencia_id: 24 },
+    { id: 28, nombre: 'Comisaría de Familia 2',               email: 'comisaria2@sopo.gov.co',      password_hash: hash, rol: 'dependencia', dependencia_id: 25 },
+    { id: 29, nombre: 'Atención al Ciudadano',                email: 'atencion@sopo.gov.co',        password_hash: hash, rol: 'dependencia', dependencia_id: 26 },
+    { id: 30, nombre: 'Funcionario Hacienda',                 email: 'hacienda@sopo.gov.co',        password_hash: hash, rol: 'dependencia', dependencia_id: 27 },
+    { id: 31, nombre: 'Funcionario SISBÉN',                   email: 'sisben@sopo.gov.co',          password_hash: hash, rol: 'dependencia', dependencia_id: 28 },
   ]);
 
-  // Conductores
+  // Conductores (usuario_id apunta a los ids 2 y 3 de la tabla usuarios de arriba)
   await knex('conductores').insert([
-    { id: 1, usuario_id: 5, nombre: 'Carlos Rodríguez', telefono: '3101234567', licencia: 'C2', vencimiento_licencia: '2027-06-15', estado: 'activo' },
-    { id: 2, usuario_id: 6, nombre: 'Miguel Ángel Torres', telefono: '3209876543', licencia: 'C2', vencimiento_licencia: '2027-03-20', estado: 'activo' },
+    { id: 1, usuario_id: 2, nombre: 'Carlos Rodríguez', telefono: '3101234567', licencia: 'C2', vencimiento_licencia: '2027-06-15', estado: 'activo' },
+    { id: 2, usuario_id: 3, nombre: 'Miguel Ángel Torres', telefono: '3209876543', licencia: 'C2', vencimiento_licencia: '2027-03-20', estado: 'activo' },
   ]);
 
   // Reset sequences after manual ID inserts
