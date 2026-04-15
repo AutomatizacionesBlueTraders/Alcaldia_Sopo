@@ -195,6 +195,15 @@ export default function DetalleSolicitudAdmin() {
     finally { setActionLoading(false); }
   }
 
+  async function handleMarcarRevisada() {
+    setActionLoading(true);
+    try {
+      await api.patch(`/admin/solicitudes/${id}/marcar-revisada`);
+      setMsg('Cancelación marcada como revisada'); cargar();
+    } catch (err) { setMsg(err.response?.data?.error || 'Error al marcar como revisada'); }
+    finally { setActionLoading(false); }
+  }
+
   async function handleReabrir() {
     if (!confirm('¿Reabrir esta solicitud? Pasará a estado "Pendiente programación".')) return;
     setActionLoading(true);
@@ -229,6 +238,7 @@ export default function DetalleSolicitudAdmin() {
   const puedeEditar = !['CANCELADA', 'RECHAZADA', 'FINALIZADA'].includes(sol.estado);
   const puedeCancelar = !['CANCELADA', 'RECHAZADA', 'FINALIZADA'].includes(sol.estado);
   const puedeReabrir = ['CANCELADA', 'RECHAZADA'].includes(sol.estado);
+  const puedeMarcarRevisada = sol.estado === 'CANCELADA' && sol.cancelacion_revisada === false;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -375,6 +385,12 @@ export default function DetalleSolicitudAdmin() {
           <button onClick={() => setCancelModal(true)} className="inline-flex items-center gap-2 px-4 py-2.5 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors">
             <XCircleIcon className="w-4 h-4" />
             Cancelar
+          </button>
+        )}
+        {puedeMarcarRevisada && (
+          <button onClick={handleMarcarRevisada} disabled={actionLoading} className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
+            <CheckIcon className="w-4 h-4" />
+            Marcar como revisada
           </button>
         )}
         {puedeReabrir && (
