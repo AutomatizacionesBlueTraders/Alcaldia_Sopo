@@ -18,6 +18,7 @@ export default function DetalleSolicitudAdmin() {
   const [conductores, setConductores] = useState([]);
   const [progForm, setProgForm] = useState({ vehiculo_id: '', conductor_id: '', fecha: '', hora_inicio: '', hora_fin: '' });
   const [progLoading, setProgLoading] = useState(false);
+  const [vehiculoSearch, setVehiculoSearch] = useState('');
 
   // Reprogramacion
   const [reprogModal, setReprogModal] = useState(false);
@@ -25,6 +26,7 @@ export default function DetalleSolicitudAdmin() {
   const [reprogVehiculos, setReprogVehiculos] = useState([]);
   const [reprogConductores, setReprogConductores] = useState([]);
   const [reprogLoading, setReprogLoading] = useState(false);
+  const [reprogVehiculoSearch, setReprogVehiculoSearch] = useState('');
 
   // Edicion
   const [editando, setEditando] = useState(false);
@@ -209,6 +211,18 @@ export default function DetalleSolicitudAdmin() {
     </div>
   );
   if (!sol) return <p className="text-red-500">No encontrada</p>;
+
+  const filtrarVehiculos = (lista, q) => {
+    const t = q.trim().toLowerCase();
+    if (!t) return lista;
+    return lista.filter(v =>
+      (v.placa || '').toLowerCase().includes(t) ||
+      (v.marca || '').toLowerCase().includes(t) ||
+      (v.modelo || '').toLowerCase().includes(t)
+    );
+  };
+  const vehiculosFiltrados = filtrarVehiculos(vehiculos, vehiculoSearch);
+  const reprogVehiculosFiltrados = filtrarVehiculos(reprogVehiculos, reprogVehiculoSearch);
 
   const puedeProgramar = sol.estado === 'PENDIENTE_PROGRAMACION';
   const puedeReprogramar = ['PROGRAMADA', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA', 'EN_EJECUCION'].includes(sol.estado) && sol.asignacion;
@@ -421,11 +435,18 @@ export default function DetalleSolicitudAdmin() {
           </div>
 
           <div>
-            <label className="text-xs text-gray-500">Vehiculo ({vehiculos.length} disponibles)</label>
+            <label className="text-xs text-gray-500">Vehiculo ({vehiculosFiltrados.length}{vehiculoSearch ? ` de ${vehiculos.length}` : ''} disponibles)</label>
+            <input
+              type="text"
+              value={vehiculoSearch}
+              onChange={e => setVehiculoSearch(e.target.value)}
+              placeholder="Buscar por placa, marca o modelo..."
+              className="input-field mb-1"
+            />
             <select value={progForm.vehiculo_id} onChange={e => setProgForm({...progForm, vehiculo_id: e.target.value})}
-              className="input-field">
+              className="input-field" size={Math.min(Math.max(vehiculosFiltrados.length, 3), 6)}>
               <option value="">Seleccionar...</option>
-              {vehiculos.map(v => <option key={v.id} value={v.id}>{v.placa} — {v.marca} {v.modelo}</option>)}
+              {vehiculosFiltrados.map(v => <option key={v.id} value={v.id}>{v.placa} — {v.marca} {v.modelo}</option>)}
             </select>
           </div>
 
@@ -493,14 +514,21 @@ export default function DetalleSolicitudAdmin() {
           </div>
 
           <div>
-            <label className="text-xs text-gray-500">Vehiculo ({reprogVehiculos.length} disponibles)</label>
+            <label className="text-xs text-gray-500">Vehiculo ({reprogVehiculosFiltrados.length}{reprogVehiculoSearch ? ` de ${reprogVehiculos.length}` : ''} disponibles)</label>
+            <input
+              type="text"
+              value={reprogVehiculoSearch}
+              onChange={e => setReprogVehiculoSearch(e.target.value)}
+              placeholder="Buscar por placa, marca o modelo..."
+              className="input-field mb-1"
+            />
             <select value={reprogForm.vehiculo_id} onChange={e => setReprogForm({...reprogForm, vehiculo_id: e.target.value})}
-              className="input-field">
+              className="input-field" size={Math.min(Math.max(reprogVehiculosFiltrados.length + (sol.vehiculo ? 1 : 0), 3), 6)}>
               <option value="">Seleccionar...</option>
               {sol.vehiculo && !reprogVehiculos.find(v => v.id === sol.vehiculo.id) && (
                 <option value={sol.vehiculo.id}>{sol.vehiculo.placa} — {sol.vehiculo.marca} {sol.vehiculo.modelo} (actual)</option>
               )}
-              {reprogVehiculos.map(v => <option key={v.id} value={v.id}>{v.placa} — {v.marca} {v.modelo}</option>)}
+              {reprogVehiculosFiltrados.map(v => <option key={v.id} value={v.id}>{v.placa} — {v.marca} {v.modelo}</option>)}
             </select>
           </div>
 
