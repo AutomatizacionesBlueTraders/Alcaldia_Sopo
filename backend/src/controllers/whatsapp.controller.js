@@ -431,7 +431,7 @@ async function recordatorios(req, res) {
       if (telSolic) {
         mensajes.push({
           to: `whatsapp:+57${telSolic.replace(/\D/g, '')}`,
-          body: `*Recordatorio — Alcaldía de Sopó*\n\nMañana tienes un servicio programado:\n\nServicio: *${s.solicitud_id}*\nSolicitante: *${nombreSolic}*\nTeléfono: *${telSolic}*\nRuta: *${s.origen} → ${s.destino}*\nHora: *${hora}*\nConductor: *${s.conductor_nombre}*`
+          body: `*Recordatorio — Alcaldía de Sopó*\n\nMañana tienes un servicio programado:\n\nSolicitud: *#${s.solicitud_id}*\nSolicitante: *${nombreSolic}*\nTeléfono: *${telSolic}*\nRuta: *${s.origen} → ${s.destino}*\nHora: *${hora}*\nConductor: *${s.conductor_nombre}*`
         });
       }
       if (s.conductor_telefono) {
