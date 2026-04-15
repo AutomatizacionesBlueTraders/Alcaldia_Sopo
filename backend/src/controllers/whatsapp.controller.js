@@ -245,7 +245,10 @@ async function confirmarServicio(req, res) {
     }
 
     const updateData = { estado: nuevoEstado, updated_at: db.fn.now() };
-    if (!confirmado) updateData.motivo_cancelacion = motivo || 'No confirmada por el solicitante vía WhatsApp';
+    if (!confirmado) {
+      updateData.motivo_cancelacion = motivo || 'No confirmada por el solicitante vía WhatsApp';
+      updateData.cancelacion_revisada = false;
+    }
 
     await db('solicitudes').where({ id: solicitud_id }).update(updateData);
     await db('historial_solicitudes').insert({
