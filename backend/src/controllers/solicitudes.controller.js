@@ -417,6 +417,11 @@ async function dashboardAdmin(req, res) {
         'solicitudes.motivo_cancelacion',
         'solicitudes.updated_at',
         'solicitudes.canal',
+        'solicitudes.nombre_solicitante',
+        'solicitudes.telefono_solicitante',
+        'solicitudes.fecha_servicio',
+        'solicitudes.horario_solicitud',
+        'solicitudes.pasajeros',
         'dependencias.nombre as dependencia_nombre'
       )
       .orderBy('solicitudes.updated_at', 'desc');

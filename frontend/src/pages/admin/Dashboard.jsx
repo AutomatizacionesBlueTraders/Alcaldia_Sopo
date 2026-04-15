@@ -172,8 +172,25 @@ export default function AdminDashboard() {
                     <span className="text-xs text-gray-400 ml-auto">{tiempoRelativo(c.updated_at)}</span>
                   </div>
                   <p className="text-sm text-gray-700 truncate">{c.origen} → {c.destino}</p>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-600 mt-1">
+                    {c.nombre_solicitante && (
+                      <span><span className="text-gray-400">Solicitante:</span> <span className="font-medium">{c.nombre_solicitante}</span></span>
+                    )}
+                    {c.telefono_solicitante && (
+                      <span><span className="text-gray-400">Tel:</span> {c.telefono_solicitante}</span>
+                    )}
+                    {c.fecha_servicio && (
+                      <span><span className="text-gray-400">Fecha:</span> {c.fecha_servicio.substring(0, 10)}</span>
+                    )}
+                    {c.horario_solicitud && (
+                      <span><span className="text-gray-400">Horario:</span> {c.horario_solicitud}</span>
+                    )}
+                    {c.pasajeros != null && (
+                      <span><span className="text-gray-400">Pasajeros:</span> {c.pasajeros}</span>
+                    )}
+                  </div>
                   {c.motivo_cancelacion && (
-                    <p className="text-xs text-red-600 mt-1 truncate italic">"{c.motivo_cancelacion}"</p>
+                    <p className="text-xs text-red-600 mt-1 italic">"{c.motivo_cancelacion}"</p>
                   )}
                 </Link>
                 <button
