@@ -401,12 +401,16 @@ async function finalizarServicioWa(req, res) {
 
 async function recordatorios(req, res) {
   try {
-    const manana = new Date();
-    manana.setDate(manana.getDate() + 1);
-    const fechaMañana = manana.toISOString().substring(0, 10);
+    let fechaObjetivo = req.query.fecha;
+    if (!fechaObjetivo) {
+      // "Mañana" calculado en hora Colombia (UTC-5) para evitar desfase por timezone del servidor
+      const ahoraBogota = new Date(Date.now() - 5 * 60 * 60 * 1000);
+      ahoraBogota.setUTCDate(ahoraBogota.getUTCDate() + 1);
+      fechaObjetivo = ahoraBogota.toISOString().substring(0, 10);
+    }
 
     const servicios = await db('asignaciones')
-      .where('asignaciones.fecha', fechaMañana)
+      .where('asignaciones.fecha', fechaObjetivo)
       .join('solicitudes', 'asignaciones.solicitud_id', 'solicitudes.id')
       .join('conductores', 'asignaciones.conductor_id', 'conductores.id')
       .whereIn('solicitudes.estado', ['PROGRAMADA', 'CONFIRMADA'])
@@ -414,6 +418,7 @@ async function recordatorios(req, res) {
         'solicitudes.id as solicitud_id',
         'solicitudes.origen', 'solicitudes.destino',
         'solicitudes.contacto_nombre', 'solicitudes.contacto_telefono',
+        'solicitudes.nombre_solicitante', 'solicitudes.telefono_solicitante',
         'asignaciones.hora_inicio',
         'conductores.nombre as conductor_nombre', 'conductores.telefono as conductor_telefono'
       );
@@ -421,16 +426,18 @@ async function recordatorios(req, res) {
     const mensajes = [];
     for (const s of servicios) {
       const hora = s.hora_inicio?.substring(0, 5);
-      if (s.contacto_telefono) {
+      const nombreSolic = s.nombre_solicitante || s.contacto_nombre;
+      const telSolic = s.telefono_solicitante || s.contacto_telefono;
+      if (telSolic) {
         mensajes.push({
-          to: `whatsapp:+57${s.contacto_telefono.replace(/\D/g, '')}`,
-          body: `*Recordatorio — Alcaldía de Sopó*\n\nMañana tienes un servicio programado:\n\nServicio: *${s.solicitud_id}*\nSolicitante: *${s.contacto_nombre}*\nTeléfono: *${s.contacto_telefono}*\nRuta: *${s.origen} → ${s.destino}*\nHora: *${hora}*\nConductor: *${s.conductor_nombre}*`
+          to: `whatsapp:+57${telSolic.replace(/\D/g, '')}`,
+          body: `*Recordatorio — Alcaldía de Sopó*\n\nMañana tienes un servicio programado:\n\nServicio: *${s.solicitud_id}*\nSolicitante: *${nombreSolic}*\nTeléfono: *${telSolic}*\nRuta: *${s.origen} → ${s.destino}*\nHora: *${hora}*\nConductor: *${s.conductor_nombre}*`
         });
       }
       if (s.conductor_telefono) {
         mensajes.push({
           to: `whatsapp:+57${s.conductor_telefono.replace(/\D/g, '')}`,
-          body: `🔔 *Recordatorio — Alcaldía de Sopó*\n\nMañana tienes un servicio asignado:\n\n📍 *${s.origen} → ${s.destino}*\n⏰ Hora: *${hora}*\n👤 Contacto: ${s.contacto_nombre}\n\nSolicitud #${s.solicitud_id}`
+          body: `🔔 *Recordatorio — Alcaldía de Sopó*\n\nMañana tienes un servicio asignado:\n\n📍 *${s.origen} → ${s.destino}*\n⏰ Hora: *${hora}*\n👤 Contacto: ${nombreSolic}\n\nSolicitud #${s.solicitud_id}`
         });
       }
     }
