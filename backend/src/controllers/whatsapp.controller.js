@@ -434,12 +434,6 @@ async function recordatorios(req, res) {
           body: `*Recordatorio — Alcaldía de Sopó*\n\nMañana tienes un servicio programado:\n\nSolicitud: *#${s.solicitud_id}*\nSolicitante: *${nombreSolic}*\nTeléfono: *${telSolic}*\nRuta: *${s.origen} → ${s.destino}*\nHora: *${hora}*\nConductor: *${s.conductor_nombre}*`
         });
       }
-      if (s.conductor_telefono) {
-        mensajes.push({
-          to: `whatsapp:+57${s.conductor_telefono.replace(/\D/g, '')}`,
-          body: `🔔 *Recordatorio — Alcaldía de Sopó*\n\nMañana tienes un servicio asignado:\n\n📍 *${s.origen} → ${s.destino}*\n⏰ Hora: *${hora}*\n👤 Contacto: ${nombreSolic}\n\nSolicitud #${s.solicitud_id}`
-        });
-      }
     }
 
     res.json(mensajes);
