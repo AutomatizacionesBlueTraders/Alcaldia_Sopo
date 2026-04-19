@@ -31,6 +31,10 @@ router.post('/finalizar-servicio-wa', ctrl.finalizarServicioWa);
 // Recordatorios (cron en n8n)
 router.get('/recordatorios',          ctrl.recordatorios);
 
+// Guardado de mensajes Twilio (n8n llama acá al recibir/enviar)
+const convCtrl = require('../controllers/conversaciones.controller');
+router.post('/mensaje',               convCtrl.guardarMensaje);
+
 // Crear solicitud con campos nuevos (endpoint "moderno")
 const solCtrl = require('../controllers/solicitudes.controller');
 router.post('/solicitud',             solCtrl.crear);

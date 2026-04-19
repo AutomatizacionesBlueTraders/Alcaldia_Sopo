@@ -11,6 +11,7 @@ import {
   BoltIcon,
   WrenchScrewdriverIcon,
   InformationCircleIcon,
+  ChatBubbleLeftRightIcon,
   ArrowRightOnRectangleIcon,
   Bars3Icon,
   XMarkIcon,
@@ -25,11 +26,13 @@ const NAV_ITEMS = {
     { to: '/admin/conductores', label: 'Conductores', icon: UsersIcon },
     { to: '/admin/novedades', label: 'Novedades', icon: ExclamationTriangleIcon },
     { to: '/admin/combustible', label: 'Combustible', icon: BoltIcon },
+    { to: '/admin/conversaciones', label: 'Conversaciones', icon: ChatBubbleLeftRightIcon },
   ],
   dependencia: [
     { to: '/solicitudes', label: 'Dashboard', icon: HomeIcon },
     { to: '/solicitudes/nueva', label: 'Nueva Solicitud', icon: PlusCircleIcon },
     { to: '/solicitudes/lista', label: 'Mis Solicitudes', icon: ClipboardDocumentListIcon },
+    { to: '/solicitudes/conversaciones', label: 'Conversaciones', icon: ChatBubbleLeftRightIcon },
     { to: '/solicitudes/conocimiento', label: 'Info / FAQ', icon: InformationCircleIcon },
   ],
   conductor: [

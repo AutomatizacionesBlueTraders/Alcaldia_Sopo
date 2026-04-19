@@ -26,3 +26,11 @@ Thumbs.db
 
 # PDF files
 *.pdf
+
+# Flujos n8n exportados: contienen credenciales embebidas (Twilio SID, etc).
+# El workflow vive en la instancia n8n del VPS; acá solo se versiona el script de inyección.
+n8n/*.json
+
+# Adjuntos / screenshots sueltos
+easypanelscreenshot.png
+formato_faq_sopo*.xlsx

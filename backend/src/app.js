@@ -9,6 +9,7 @@ const conductorRoutes = require('./routes/conductor');
 const catalogosRoutes = require('./routes/catalogos');
 const whatsappRoutes = require('./routes/whatsapp');
 const conocimientoRoutes = require('./routes/conocimiento');
+const conversacionesRoutes = require('./routes/conversaciones');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,6 +18,9 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
+// Espejo bajo /api para que el proxy inverso (EasyPanel solo proxea /api al backend)
+// pueda servir audios/archivos desde el frontend en producción.
+app.use('/api/uploads', express.static('uploads'));
 
 // Health check
 app.get('/api/health', async (req, res) => {
@@ -36,6 +40,7 @@ app.use('/api/conductor', conductorRoutes);
 app.use('/api/catalogos', catalogosRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/conocimiento', conocimientoRoutes);
+app.use('/api/conversaciones', conversacionesRoutes);
 
 // Start: aplica migraciones pendientes y arranca el servidor
 (async () => {
