@@ -12,6 +12,7 @@ import {
   WrenchScrewdriverIcon,
   InformationCircleIcon,
   ChatBubbleLeftRightIcon,
+  ChartBarIcon,
   ArrowRightOnRectangleIcon,
   Bars3Icon,
   XMarkIcon,
@@ -27,12 +28,14 @@ const NAV_ITEMS = {
     { to: '/admin/novedades', label: 'Novedades', icon: ExclamationTriangleIcon },
     { to: '/admin/combustible', label: 'Combustible', icon: BoltIcon },
     { to: '/admin/conversaciones', label: 'Conversaciones', icon: ChatBubbleLeftRightIcon },
+    { to: '/admin/estadisticas-wa', label: 'Estadísticas WA', icon: ChartBarIcon },
   ],
   dependencia: [
     { to: '/solicitudes', label: 'Dashboard', icon: HomeIcon },
     { to: '/solicitudes/nueva', label: 'Nueva Solicitud', icon: PlusCircleIcon },
     { to: '/solicitudes/lista', label: 'Mis Solicitudes', icon: ClipboardDocumentListIcon },
     { to: '/solicitudes/conversaciones', label: 'Conversaciones', icon: ChatBubbleLeftRightIcon },
+    { to: '/solicitudes/estadisticas-wa', label: 'Estadísticas WA', icon: ChartBarIcon },
     { to: '/solicitudes/conocimiento', label: 'Info / FAQ', icon: InformationCircleIcon },
   ],
   conductor: [

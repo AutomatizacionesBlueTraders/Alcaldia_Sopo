@@ -24,8 +24,9 @@ import Documentos from './pages/admin/Documentos';
 import AdminNovedades from './pages/admin/Novedades';
 import AdminCombustible from './pages/admin/Combustible';
 
-// Conversaciones (compartida admin + dependencia)
+// Conversaciones + Estadísticas (compartidas admin + dependencia)
 import Conversaciones from './pages/Conversaciones';
+import EstadisticasWhatsapp from './pages/EstadisticasWhatsapp';
 
 // Conductor
 import ConductorDashboard from './pages/conductor/Dashboard';
@@ -54,6 +55,7 @@ export default function App() {
             <Route path=":id" element={<DetalleSolicitud />} />
             <Route path="conocimiento" element={<BaseConocimiento />} />
             <Route path="conversaciones" element={<Conversaciones />} />
+            <Route path="estadisticas-wa" element={<EstadisticasWhatsapp />} />
           </Route>
 
           {/* Admin */}
@@ -73,6 +75,7 @@ export default function App() {
             <Route path="novedades" element={<AdminNovedades />} />
             <Route path="combustible" element={<AdminCombustible />} />
             <Route path="conversaciones" element={<Conversaciones />} />
+            <Route path="estadisticas-wa" element={<EstadisticasWhatsapp />} />
           </Route>
 
           {/* Conductor */}
