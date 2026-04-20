@@ -23,15 +23,19 @@ function waPrefix(telefono) {
   return `whatsapp:+${digits}`;
 }
 
-// Lista de mensajes filtrada por From o To. Devuelve el array crudo de Twilio.
-async function listMessages({ from, to, limit = 200 }) {
+// Lista de mensajes filtrada por From/To/fecha. Devuelve el array crudo de Twilio.
+// desde/hasta son fechas ISO (YYYY-MM-DD). Twilio usa operadores en el nombre
+// del parámetro: DateSent>=YYYY-MM-DD, DateSent<=YYYY-MM-DD.
+async function listMessages({ from, to, limit = 200, desde, hasta } = {}) {
   const { sid, authHeader } = creds();
-  const params = new URLSearchParams();
-  if (from) params.set('From', from);
-  if (to) params.set('To', to);
-  params.set('PageSize', String(Math.min(limit, 1000)));
+  const pageSize = String(Math.min(limit, 1000));
 
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json?${params}`;
+  let url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json?PageSize=${pageSize}`;
+  if (from) url += `&From=${encodeURIComponent(from)}`;
+  if (to) url += `&To=${encodeURIComponent(to)}`;
+  if (desde) url += `&DateSent%3E=${encodeURIComponent(desde)}`; // DateSent>
+  if (hasta) url += `&DateSent%3C=${encodeURIComponent(hasta)}`; // DateSent<
+
   const resp = await fetch(url, { headers: { Authorization: authHeader } });
   if (!resp.ok) {
     const body = await resp.text().catch(() => '');
@@ -39,6 +43,21 @@ async function listMessages({ from, to, limit = 200 }) {
   }
   const data = await resp.json();
   return data.messages || [];
+}
+
+// Convierte "hoy"|"semana"|"mes"|"3meses"|"todo" en { desde } (YYYY-MM-DD).
+function rangoParaPeriodo(periodo) {
+  const ahora = new Date();
+  const offsetDias = {
+    hoy: 1,
+    semana: 7,
+    mes: 30,
+    '3meses': 90,
+  }[periodo];
+  if (!offsetDias) return {};
+  const desde = new Date(ahora);
+  desde.setDate(ahora.getDate() - offsetDias);
+  return { desde: desde.toISOString().slice(0, 10) };
 }
 
 // Trae entrantes + salientes de un teléfono, los normaliza y ordena cronológicamente.
@@ -136,19 +155,13 @@ async function streamMediaTo(messageSid, index, clientRes) {
 // Lista las conversaciones recientes agrupando los últimos N mensajes de la
 // cuenta por "contraparte" (el teléfono del usuario, sea entrante o saliente).
 // Solo incluye WhatsApp (ambos lados deben llevar prefijo "whatsapp:").
-async function listConversaciones({ limit = 1000 } = {}) {
-  const { sid, authHeader } = creds();
-  const params = new URLSearchParams();
-  params.set('PageSize', String(Math.min(limit, 1000)));
-
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json?${params}`;
-  const resp = await fetch(url, { headers: { Authorization: authHeader } });
-  if (!resp.ok) {
-    const body = await resp.text().catch(() => '');
-    throw new Error(`Twilio ${resp.status}: ${body.slice(0, 200)}`);
-  }
-  const data = await resp.json();
-  const mensajes = data.messages || [];
+async function listConversaciones({ limit = 1000, periodo, desde, hasta } = {}) {
+  const rango = periodo ? rangoParaPeriodo(periodo) : {};
+  const mensajes = await listMessages({
+    limit,
+    desde: desde || rango.desde,
+    hasta: hasta || rango.hasta,
+  });
 
   const grupos = new Map();
   for (const m of mensajes) {

@@ -35,19 +35,36 @@ function tipoBadge(tipo) {
   return <span className={`text-[10px] px-1.5 py-0.5 rounded ${m.cls}`}>{m.label}</span>;
 }
 
+const PERIODOS = [
+  { value: 'hoy', label: 'Hoy' },
+  { value: 'semana', label: 'Esta semana' },
+  { value: 'mes', label: 'Último mes' },
+  { value: '3meses', label: 'Últimos 3 meses' },
+  { value: 'todo', label: 'Todo (lento)' },
+];
+
 export default function Conversaciones() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [conversaciones, setConversaciones] = useState([]);
   const [seleccionada, setSeleccionada] = useState(searchParams.get('telefono') || null);
   const [hilo, setHilo] = useState(null);
   const [q, setQ] = useState('');
+  const [periodo, setPeriodo] = useState('mes');
   const [loading, setLoading] = useState(true);
+  const [loadingLista, setLoadingLista] = useState(false);
   const [loadingHilo, setLoadingHilo] = useState(false);
   const hiloEndRef = useRef(null);
 
   async function cargarLista() {
-    const { data } = await api.get('/conversaciones', { params: q ? { q } : {} });
-    setConversaciones(data);
+    setLoadingLista(true);
+    try {
+      const params = { periodo };
+      if (q) params.q = q;
+      const { data } = await api.get('/conversaciones', { params });
+      setConversaciones(data);
+    } finally {
+      setLoadingLista(false);
+    }
   }
 
   async function cargarHilo(telefono) {
@@ -80,7 +97,7 @@ export default function Conversaciones() {
   useEffect(() => {
     const t = setTimeout(() => cargarLista().catch(() => {}), 300);
     return () => clearTimeout(t);
-  }, [q]);
+  }, [q, periodo]);
 
   useEffect(() => {
     if (hilo && hiloEndRef.current) {
@@ -96,14 +113,32 @@ export default function Conversaciones() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="page-title flex items-center gap-2">
-          <ChatBubbleLeftRightIcon className="w-7 h-7 text-primary-600" />
-          Conversaciones de WhatsApp
-        </h2>
-        <p className="text-gray-500 text-sm mt-1">
-          {conversaciones.length} número{conversaciones.length === 1 ? '' : 's'} ha{conversaciones.length === 1 ? '' : 'n'} escrito al bot. El hilo completo se consulta a Twilio al abrir un chat.
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h2 className="page-title flex items-center gap-2">
+            <ChatBubbleLeftRightIcon className="w-7 h-7 text-primary-600" />
+            Conversaciones de WhatsApp
+          </h2>
+          <p className="text-gray-500 text-sm mt-1">
+            {conversaciones.length} número{conversaciones.length === 1 ? '' : 's'} en {PERIODOS.find(p => p.value === periodo)?.label.toLowerCase()}. El hilo completo se consulta a Twilio al abrir un chat.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-gray-500">Periodo:</label>
+          <select
+            value={periodo}
+            onChange={(e) => setPeriodo(e.target.value)}
+            disabled={loadingLista}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-300 disabled:opacity-50"
+          >
+            {PERIODOS.map(p => (
+              <option key={p.value} value={p.value}>{p.label}</option>
+            ))}
+          </select>
+          {loadingLista && (
+            <div className="animate-spin w-4 h-4 border-2 border-primary-200 border-t-primary-600 rounded-full" />
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-220px)] min-h-[500px]">

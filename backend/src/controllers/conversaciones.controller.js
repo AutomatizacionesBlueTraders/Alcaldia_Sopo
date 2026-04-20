@@ -105,12 +105,12 @@ async function guardarMensaje(req, res) {
 // Si Twilio falla, se usa la DB local como fallback.
 async function listar(req, res) {
   try {
-    const { q } = req.query;
+    const { q, periodo = 'mes' } = req.query;
     let fuente = 'twilio';
     let grupos = [];
 
     try {
-      grupos = await listConversaciones({ limit: 1000 });
+      grupos = await listConversaciones({ limit: 1000, periodo });
     } catch (err) {
       console.error('listar vía Twilio falló, usando DB:', err.message);
       fuente = 'db-fallback';

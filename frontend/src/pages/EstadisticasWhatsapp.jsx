@@ -40,6 +40,7 @@ export default function EstadisticasWhatsapp() {
   );
 
   const irAHilo = (telefono) => navigate(`${rutaConversaciones}?telefono=${telefono}`);
+  const sinDatos = stats.totales.mes === 0 && stats.totales.hoy === 0;
 
   return (
     <div className="space-y-6">
@@ -52,6 +53,26 @@ export default function EstadisticasWhatsapp() {
           Basado en mensajes entrantes del bot y su cruce con solicitudes y sesiones.
         </p>
       </div>
+
+      {sinDatos && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-4">
+          <h3 className="font-semibold text-sm flex items-center gap-2">
+            <ExclamationTriangleIcon className="w-5 h-5 text-amber-600" />
+            Aún no hay datos para mostrar
+          </h3>
+          <p className="text-sm mt-1 text-amber-800">
+            Las estadísticas se alimentan con los mensajes entrantes que guarda n8n en la base de datos.
+          </p>
+          <ol className="text-sm mt-2 ml-5 list-decimal space-y-1 text-amber-800">
+            <li>Importá <code className="bg-amber-100 px-1 rounded">flujo-whatsapp-CON-GUARDADO.json</code> en el n8n del VPS.</li>
+            <li>Desactivá el workflow antiguo y activá el nuevo.</li>
+            <li>Cuando lleguen mensajes nuevos, se guardarán automáticamente y acá empezarás a ver métricas.</li>
+          </ol>
+          <p className="text-xs mt-2 text-amber-700">
+            La vista de <strong>Conversaciones</strong> sigue funcionando sin el flujo (se consulta directo a Twilio).
+          </p>
+        </div>
+      )}
 
       {/* Stats cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
