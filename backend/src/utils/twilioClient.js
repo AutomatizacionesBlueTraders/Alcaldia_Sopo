@@ -133,4 +133,59 @@ async function streamMediaTo(messageSid, index, clientRes) {
   clientRes.end(buf);
 }
 
-module.exports = { fetchHilo, streamMediaTo };
+// Lista las conversaciones recientes agrupando los últimos N mensajes de la
+// cuenta por "contraparte" (el teléfono del usuario, sea entrante o saliente).
+// Solo incluye WhatsApp (ambos lados deben llevar prefijo "whatsapp:").
+async function listConversaciones({ limit = 1000 } = {}) {
+  const { sid, authHeader } = creds();
+  const params = new URLSearchParams();
+  params.set('PageSize', String(Math.min(limit, 1000)));
+
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json?${params}`;
+  const resp = await fetch(url, { headers: { Authorization: authHeader } });
+  if (!resp.ok) {
+    const body = await resp.text().catch(() => '');
+    throw new Error(`Twilio ${resp.status}: ${body.slice(0, 200)}`);
+  }
+  const data = await resp.json();
+  const mensajes = data.messages || [];
+
+  const grupos = new Map();
+  for (const m of mensajes) {
+    const from = String(m.from || '');
+    const to = String(m.to || '');
+    if (!from.startsWith('whatsapp:') && !to.startsWith('whatsapp:')) continue;
+
+    const dir = String(m.direction || '');
+    const esInbound = dir.startsWith('inbound');
+    const otherParty = esInbound ? from : to;
+    const tel = otherParty.replace(/\D/g, '');
+    if (!tel) continue;
+
+    const fecha = m.date_sent || m.date_created;
+    const numMedia = parseInt(m.num_media) || 0;
+    const body = m.body || (numMedia > 0 ? '🎵 Audio / adjunto' : '');
+
+    if (!grupos.has(tel)) {
+      grupos.set(tel, {
+        telefono: tel,
+        total_mensajes: 0,
+        ultima_fecha: fecha,
+        ultimo_mensaje: body,
+        ultima_direccion: esInbound ? 'in' : 'out',
+      });
+    }
+    const g = grupos.get(tel);
+    g.total_mensajes++;
+    if (new Date(fecha) > new Date(g.ultima_fecha)) {
+      g.ultima_fecha = fecha;
+      g.ultimo_mensaje = body;
+      g.ultima_direccion = esInbound ? 'in' : 'out';
+    }
+  }
+
+  return Array.from(grupos.values())
+    .sort((a, b) => new Date(b.ultima_fecha) - new Date(a.ultima_fecha));
+}
+
+module.exports = { fetchHilo, streamMediaTo, listConversaciones };

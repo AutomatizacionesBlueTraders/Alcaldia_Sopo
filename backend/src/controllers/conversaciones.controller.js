@@ -1,5 +1,5 @@
 const db = require('../config/db');
-const { fetchHilo, streamMediaTo } = require('../utils/twilioClient');
+const { fetchHilo, streamMediaTo, listConversaciones } = require('../utils/twilioClient');
 
 // Normaliza "whatsapp:+573001234567" → "573001234567" (solo dígitos)
 function normalizarTelefono(raw) {
@@ -61,37 +61,28 @@ async function guardarMensaje(req, res) {
 }
 
 // ─── GET /api/conversaciones (JWT) ──────────────────────────────────────────
+// Fuente primaria: Twilio (últimos ~1000 mensajes agrupados por contraparte).
+// Si Twilio falla, se usa la DB local como fallback.
 async function listar(req, res) {
   try {
     const { q } = req.query;
+    let fuente = 'twilio';
+    let grupos = [];
 
-    let base = db('whatsapp_mensajes')
-      .select('telefono_usuario')
-      .max('created_at as ultima_fecha')
-      .count('id as total_mensajes')
-      .groupBy('telefono_usuario')
-      .orderBy('ultima_fecha', 'desc');
+    try {
+      grupos = await listConversaciones({ limit: 1000 });
+    } catch (err) {
+      console.error('listar vía Twilio falló, usando DB:', err.message);
+      fuente = 'db-fallback';
+      grupos = await listarDesdeDB();
+    }
 
     if (q) {
-      base = base.where('telefono_usuario', 'like', `%${String(q).replace(/\D/g, '')}%`);
+      const qClean = String(q).replace(/\D/g, '');
+      grupos = grupos.filter(g => g.telefono.includes(qClean));
     }
 
-    const grupos = await base;
-
-    const telefonos = grupos.map(g => g.telefono_usuario);
-    let ultimos = [];
-    if (telefonos.length) {
-      ultimos = await db.raw(`
-        SELECT DISTINCT ON (telefono_usuario)
-          telefono_usuario, body, direccion, created_at, num_media, media_content_type
-        FROM whatsapp_mensajes
-        WHERE telefono_usuario = ANY(?)
-        ORDER BY telefono_usuario, created_at DESC
-      `, [telefonos]);
-      ultimos = ultimos.rows;
-    }
-    const ultimosMap = Object.fromEntries(ultimos.map(u => [u.telefono_usuario, u]));
-
+    const telefonos = grupos.map(g => g.telefono);
     const tmap = {};
     if (telefonos.length) {
       const usuarios = await db('usuarios').whereIn('telefono', telefonos).select('telefono', 'nombre');
@@ -100,26 +91,53 @@ async function listar(req, res) {
       conductores.forEach(c => { tmap[normalizarTelefono(c.telefono)] = { nombre: c.nombre, tipo: 'conductor' }; });
     }
 
-    const result = grupos.map(g => {
-      const ult = ultimosMap[g.telefono_usuario] || {};
-      const meta = tmap[g.telefono_usuario] || {};
-      const esAudio = ult.media_content_type && ult.media_content_type.startsWith('audio/');
-      return {
-        telefono: g.telefono_usuario,
-        nombre: meta.nombre || null,
-        tipo: meta.tipo || 'desconocido',
-        total_mensajes: parseInt(g.total_mensajes),
-        ultima_fecha: g.ultima_fecha,
-        ultimo_mensaje: ult.body || (ult.num_media > 0 ? (esAudio ? '🎵 Audio' : '📎 Adjunto') : ''),
-        ultima_direccion: ult.direccion || null,
-      };
-    });
+    const result = grupos.map(g => ({
+      ...g,
+      nombre: tmap[g.telefono]?.nombre || null,
+      tipo: tmap[g.telefono]?.tipo || 'desconocido',
+    }));
 
+    res.set('X-Source', fuente);
     res.json(result);
   } catch (err) {
     console.error('listar conversaciones:', err);
     res.status(500).json({ error: 'Error al listar conversaciones' });
   }
+}
+
+async function listarDesdeDB() {
+  const grupos = await db('whatsapp_mensajes')
+    .select('telefono_usuario')
+    .max('created_at as ultima_fecha')
+    .count('id as total_mensajes')
+    .groupBy('telefono_usuario')
+    .orderBy('ultima_fecha', 'desc');
+
+  const telefonos = grupos.map(g => g.telefono_usuario);
+  let ultimos = [];
+  if (telefonos.length) {
+    ultimos = await db.raw(`
+      SELECT DISTINCT ON (telefono_usuario)
+        telefono_usuario, body, direccion, created_at, num_media, media_content_type
+      FROM whatsapp_mensajes
+      WHERE telefono_usuario = ANY(?)
+      ORDER BY telefono_usuario, created_at DESC
+    `, [telefonos]);
+    ultimos = ultimos.rows;
+  }
+  const ultMap = Object.fromEntries(ultimos.map(u => [u.telefono_usuario, u]));
+
+  return grupos.map(g => {
+    const u = ultMap[g.telefono_usuario] || {};
+    const esAudio = u.media_content_type && u.media_content_type.startsWith('audio/');
+    return {
+      telefono: g.telefono_usuario,
+      total_mensajes: parseInt(g.total_mensajes),
+      ultima_fecha: g.ultima_fecha,
+      ultimo_mensaje: u.body || (u.num_media > 0 ? (esAudio ? '🎵 Audio' : '📎 Adjunto') : ''),
+      ultima_direccion: u.direccion || null,
+    };
+  });
 }
 
 // ─── GET /api/conversaciones/:telefono ──────────────────────────────────────
@@ -487,4 +505,35 @@ async function stats(req, res) {
   }
 }
 
-module.exports = { guardarMensaje, listar, hilo, stats, media };
+// ─── GET /api/conversaciones/diag ───────────────────────────────────────────
+// Diagnóstico rápido: ¿estoy configurado?, ¿Twilio responde?, ¿cuántos mensajes?
+async function diag(req, res) {
+  const out = {
+    twilio_configurado: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN),
+    twilio_sid: process.env.TWILIO_ACCOUNT_SID
+      ? `${process.env.TWILIO_ACCOUNT_SID.slice(0, 6)}…${process.env.TWILIO_ACCOUNT_SID.slice(-4)}`
+      : null,
+  };
+  try {
+    const convs = await listConversaciones({ limit: 100 });
+    out.twilio_ok = true;
+    out.conversaciones_twilio = convs.length;
+    out.muestra = convs.slice(0, 3).map(c => ({
+      telefono: c.telefono,
+      total_mensajes: c.total_mensajes,
+      ultima_fecha: c.ultima_fecha,
+    }));
+  } catch (err) {
+    out.twilio_ok = false;
+    out.twilio_error = err.message;
+  }
+  try {
+    const [{ count }] = await db('whatsapp_mensajes').count('id as count');
+    out.db_mensajes = parseInt(count);
+  } catch (err) {
+    out.db_error = err.message;
+  }
+  res.json(out);
+}
+
+module.exports = { guardarMensaje, listar, hilo, stats, media, diag };

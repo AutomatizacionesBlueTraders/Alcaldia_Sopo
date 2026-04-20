@@ -7,6 +7,7 @@ const ctrl = require('../controllers/conversaciones.controller');
 const ver = [requireAuth, requireRole('admin', 'dependencia')];
 
 router.get('/stats',                 ...ver, ctrl.stats);
+router.get('/diag',                  ...ver, ctrl.diag);
 router.get('/media/:sid/:index',     ...ver, ctrl.media);
 router.get('/',                      ...ver, ctrl.listar);
 router.get('/:telefono',             ...ver, ctrl.hilo);
