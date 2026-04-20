@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 """
-Modifica el flow de WhatsApp para guardar cada mensaje (entrante y saliente)
-en el backend via POST /api/whatsapp/mensaje.
+Añade UN SOLO nodo de guardado al flow de WhatsApp, colgado como segunda
+salida del TWILIO WEBHOOK. Ese nodo captura todos los mensajes ENTRANTES
+y los envía al backend para alimentar las estadísticas.
 
-Estrategia: fan-out paralelo. Los nodos de guardado se conectan como
-SEGUNDA salida de TWILIO WEBHOOK (entrantes) y de cada ENVIAR* (salientes).
-Si el guardado falla, el flow del bot no se ve afectado.
+Los mensajes salientes (respuestas del bot) NO se guardan en la BD:
+el hilo completo se consulta en vivo a Twilio desde el dashboard.
+
+Uso:
+  export N8N_API_KEY=<misma clave que el backend>
+  export BACKEND_URL=https://sopo.jfv2a2.easypanel.host/api/whatsapp/mensaje  # opcional
+  python3 n8n/inyectar-guardado-mensajes.py
 
 Input:  n8n/flujo-whatsapp.json
 Output: n8n/flujo-whatsapp-modificado.json
@@ -24,8 +29,6 @@ BACKEND_URL = os.environ.get(
     "BACKEND_URL",
     "https://sopo.jfv2a2.easypanel.host/api/whatsapp/mensaje",
 )
-# La API key debe coincidir con N8N_API_KEY del backend (ver .env.example).
-# Exportar antes de correr el script: export N8N_API_KEY=...
 API_KEY = os.environ.get("N8N_API_KEY")
 if not API_KEY:
     sys.exit("Falta la variable de entorno N8N_API_KEY (misma que usa el backend)")
@@ -35,8 +38,23 @@ def nuevo_id():
     return str(uuid.uuid4())
 
 
-def nodo_guardado(name, position, body_json_expr):
-    """Crea un nodo HTTP Request que llama al endpoint de guardado."""
+def body_entrante():
+    """Body JSON para guardar mensajes entrantes desde el TWILIO WEBHOOK."""
+    return (
+        '={\n'
+        '  "direccion": "in",\n'
+        '  "message_sid": "{{ $json.body.MessageSid }}",\n'
+        '  "from": "{{ $json.body.From }}",\n'
+        '  "to": "{{ $json.body.To }}",\n'
+        '  "body": {{ JSON.stringify($json.body.Body || "") }},\n'
+        '  "num_media": {{ parseInt($json.body.NumMedia || "0") }},\n'
+        '  "media_content_type": "{{ $json.body.MediaContentType0 || \'\' }}",\n'
+        '  "status": "received"\n'
+        '}'
+    )
+
+
+def nodo_guardado(name, position):
     return {
         "parameters": {
             "method": "POST",
@@ -50,7 +68,7 @@ def nodo_guardado(name, position, body_json_expr):
             },
             "sendBody": True,
             "specifyBody": "json",
-            "jsonBody": body_json_expr,
+            "jsonBody": body_entrante(),
             "options": {},
         },
         "type": "n8n-nodes-base.httpRequest",
@@ -58,51 +76,9 @@ def nodo_guardado(name, position, body_json_expr):
         "position": position,
         "id": nuevo_id(),
         "name": name,
-        # Que los fallos no interrumpan el flujo
         "continueOnFail": True,
         "onError": "continueRegularOutput",
     }
-
-
-def body_entrante():
-    """Body JSON para guardar mensajes entrantes (desde TWILIO WEBHOOK)."""
-    return (
-        '={\n'
-        '  "direccion": "in",\n'
-        '  "message_sid": "{{ $json.body.MessageSid }}",\n'
-        '  "from": "{{ $json.body.From }}",\n'
-        '  "to": "{{ $json.body.To }}",\n'
-        '  "body": {{ JSON.stringify($json.body.Body || "") }},\n'
-        '  "num_media": {{ parseInt($json.body.NumMedia || "0") }},\n'
-        '  "media_url": "{{ $json.body.MediaUrl0 || \'\' }}",\n'
-        '  "media_content_type": "{{ $json.body.MediaContentType0 || \'\' }}",\n'
-        '  "status": "received"\n'
-        '}'
-    )
-
-
-def body_saliente():
-    """Body JSON para guardar mensajes salientes (respuesta de Twilio API)."""
-    return (
-        '={\n'
-        '  "direccion": "out",\n'
-        '  "message_sid": "{{ $json.sid || \'\' }}",\n'
-        '  "from": "{{ $json.from || \'\' }}",\n'
-        '  "to": "{{ $json.to || \'\' }}",\n'
-        '  "body": {{ JSON.stringify($json.body || "") }},\n'
-        '  "num_media": 0,\n'
-        '  "status": "{{ $json.status || \'sent\' }}"\n'
-        '}'
-    )
-
-
-def es_twilio_messages(node):
-    """True si el nodo envía un mensaje vía Twilio API (POST a Messages.json)."""
-    params = node.get("parameters", {})
-    if node.get("type") != "n8n-nodes-base.httpRequest":
-        return False
-    url = str(params.get("url", ""))
-    return "api.twilio.com" in url and "/Messages.json" in url
 
 
 def main():
@@ -111,65 +87,48 @@ def main():
     nodes = flow["nodes"]
     connections = flow.setdefault("connections", {})
 
-    # Mapa rápido: nombre → nodo
     by_name = {n["name"]: n for n in nodes}
-
-    # ── 1. Guardado entrante (fan-out de TWILIO WEBHOOK) ─────────────────
     webhook = by_name.get("TWILIO WEBHOOK")
     if not webhook:
         sys.exit("No se encontró el nodo TWILIO WEBHOOK")
 
+    # Si ya hay un nodo de guardado antiguo (de la versión con fan-out), lo quitamos.
+    viejos = [n for n in nodes if n["name"].startswith("GUARDAR ")]
+    if viejos:
+        print(f"Quitando {len(viejos)} nodos GUARDAR antiguos…")
+        nombres_viejos = {n["name"] for n in viejos}
+        flow["nodes"] = [n for n in nodes if n["name"] not in nombres_viejos]
+        nodes = flow["nodes"]
+        # También limpiamos conexiones hacia esos nodos
+        for src, conf in list(connections.items()):
+            if src in nombres_viejos:
+                del connections[src]
+                continue
+            for idx, rama in enumerate(conf.get("main", [])):
+                conf["main"][idx] = [c for c in rama if c.get("node") not in nombres_viejos]
+
+    # Añadimos el único nodo de guardado entrante
     wx, wy = webhook["position"]
-    guardado_in = nodo_guardado(
-        "GUARDAR MENSAJE ENTRANTE",
-        [wx + 40, wy + 260],
-        body_entrante(),
-    )
+    guardado_in = nodo_guardado("GUARDAR MENSAJE ENTRANTE", [wx + 40, wy + 260])
     nodes.append(guardado_in)
 
-    # Añadir como segunda salida paralela del webhook
     conn_web = connections.setdefault("TWILIO WEBHOOK", {"main": [[]]})
-    if not conn_web["main"]:
+    if not conn_web.get("main"):
         conn_web["main"] = [[]]
+    # Aseguramos que no dupliquemos si el script se corre dos veces
+    conn_web["main"][0] = [c for c in conn_web["main"][0] if c.get("node") != "GUARDAR MENSAJE ENTRANTE"]
     conn_web["main"][0].append({
         "node": "GUARDAR MENSAJE ENTRANTE",
         "type": "main",
         "index": 0,
     })
 
-    # ── 2. Guardado saliente (fan-out de cada nodo Twilio sender) ────────
-    salientes = [n for n in nodes if es_twilio_messages(n)]
-    print(f"Nodos Twilio de envío encontrados: {len(salientes)}")
-
-    for i, sender in enumerate(salientes, 1):
-        sx, sy = sender["position"]
-        nombre_save = f"GUARDAR SALIENTE {i:02d}"
-        save_node = nodo_guardado(
-            nombre_save,
-            [sx + 20, sy + 180],
-            body_saliente(),
-        )
-        nodes.append(save_node)
-
-        conn_sender = connections.setdefault(sender["name"], {"main": [[]]})
-        if not conn_sender.get("main"):
-            conn_sender["main"] = [[]]
-        # Asegurar que existe al menos la primera rama
-        while len(conn_sender["main"]) < 1:
-            conn_sender["main"].append([])
-        conn_sender["main"][0].append({
-            "node": nombre_save,
-            "type": "main",
-            "index": 0,
-        })
-        print(f"  ✓ {sender['name']:35s} → {nombre_save}")
-
-    # Renombrar para evitar conflicto al importar
-    flow["name"] = flow.get("name", "") + " (con guardado)"
+    if not flow.get("name", "").endswith(" (con guardado)"):
+        flow["name"] = flow.get("name", "") + " (con guardado)"
 
     DST.write_text(json.dumps(flow, ensure_ascii=False, indent=2))
-    print(f"\n✅ Flow modificado guardado en: {DST}")
-    print(f"   Total de nodos añadidos: {1 + len(salientes)}")
+    print(f"✅ Flow modificado: {DST}")
+    print(f"   Nodos añadidos: 1 (GUARDAR MENSAJE ENTRANTE)")
 
 
 if __name__ == "__main__":

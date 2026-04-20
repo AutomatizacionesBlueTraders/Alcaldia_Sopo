@@ -5,17 +5,12 @@ import {
   MagnifyingGlassIcon,
   UserCircleIcon,
   PhoneIcon,
+  ExclamationTriangleIcon,
+  ArrowTrendingUpIcon,
+  CloudIcon,
 } from '@heroicons/react/24/outline';
 
-function fmtFecha(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  return d.toLocaleString('es-CO', {
-    day: '2-digit', month: '2-digit', year: '2-digit',
-    hour: '2-digit', minute: '2-digit',
-    timeZone: 'America/Bogota',
-  });
-}
+const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 function fmtHora(iso) {
   if (!iso) return '';
@@ -109,7 +104,9 @@ export default function Conversaciones() {
           <ChatBubbleLeftRightIcon className="w-7 h-7 text-primary-600" />
           Conversaciones de WhatsApp
         </h2>
-        <p className="text-gray-500 text-sm mt-1">Mensajes entrantes y salientes organizados por número</p>
+        <p className="text-gray-500 text-sm mt-1">
+          Solo se contabilizan mensajes <strong>entrantes</strong>. El hilo completo se trae desde Twilio al abrir un chat.
+        </p>
       </div>
 
       {/* Stats cards */}
@@ -124,40 +121,97 @@ export default function Conversaciones() {
         </div>
       )}
 
+      {/* Métricas clave: conversión + retención + canal */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <KpiCard
+            icon={ArrowTrendingUpIcon}
+            title="Conversión bot → solicitud"
+            value={`${stats.conversion.tasa}%`}
+            detail={`${stats.conversion.convirtieron} de ${stats.conversion.total_escribieron} personas que escribieron terminaron creando solicitud (30 días).`}
+            color="emerald"
+          />
+          <KpiCard
+            icon={CloudIcon}
+            title="Retención 14 días"
+            value={`${stats.retencion.tasa}%`}
+            detail={`${stats.retencion.volvieron} de ${stats.retencion.total_antiguos} usuarios antiguos volvieron a escribir.`}
+            color="blue"
+          />
+          <KpiCard
+            icon={ChatBubbleLeftRightIcon}
+            title="Canal de solicitudes (30 días)"
+            value={`${stats.por_canal.whatsapp || 0} / ${(stats.por_canal.whatsapp || 0) + (stats.por_canal.web || 0)}`}
+            detail={`WhatsApp: ${stats.por_canal.whatsapp || 0} · Web: ${stats.por_canal.web || 0}`}
+            color="indigo"
+          />
+        </div>
+      )}
+
       {/* Gráficos: día y semana */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {stats?.por_dia?.length > 0 && (
           <div className="card p-4">
-            <h3 className="section-title mb-3 text-base">Actividad diaria (30 días)</h3>
+            <h3 className="section-title mb-3 text-base">Entrantes por día (30 días)</h3>
             <BarChart datos={stats.por_dia} labelKey="dia" />
-            <Leyenda />
           </div>
         )}
         {stats?.por_semana?.length > 0 && (
           <div className="card p-4">
-            <h3 className="section-title mb-3 text-base">Actividad por semana (12 sem.)</h3>
+            <h3 className="section-title mb-3 text-base">Entrantes por semana (12 sem.)</h3>
             <BarChart datos={stats.por_semana} labelKey="semana" />
-            <Leyenda />
           </div>
         )}
       </div>
 
-      {/* Distribución por hora + nuevos vs activos */}
+      {/* Heatmap hora × día de la semana */}
+      {stats?.heatmap && (
+        <div className="card p-4">
+          <h3 className="section-title mb-3 text-base">¿Cuándo escriben? (hora × día, 30 días)</h3>
+          <Heatmap datos={stats.heatmap} />
+        </div>
+      )}
+
+      {/* Atascos en el bot + posible fricción */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {stats?.por_hora?.length > 0 && (
+        {stats?.atascos_sesiones?.length > 0 && (
           <div className="card p-4">
-            <h3 className="section-title mb-3 text-base">¿A qué hora escriben? (30 días)</h3>
-            <HourChart datos={stats.por_hora} />
+            <h3 className="section-title mb-3 text-base flex items-center gap-2">
+              <ExclamationTriangleIcon className="w-5 h-5 text-amber-500" />
+              Usuarios atascados en el bot
+            </h3>
+            <p className="text-xs text-gray-500 mb-2">Estados donde hay usuarios sin llegar al final del flujo.</p>
+            <RankedList items={stats.atascos_sesiones} labelKey="estado" emptyText="Sin atascos" />
           </div>
         )}
-        {stats?.nuevos_por_dia?.length > 0 && (
+        {stats?.posible_friccion?.length > 0 && (
           <div className="card p-4">
-            <h3 className="section-title mb-3 text-base">Contactos nuevos vs. activos/día</h3>
-            <NewVsActiveChart datos={stats.nuevos_por_dia} />
-            <div className="flex gap-3 text-[11px] text-gray-500 mt-2">
-              <span className="flex items-center gap-1"><span className="w-3 h-3 bg-emerald-500 rounded-sm" /> Nuevos</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-3 bg-primary-400 rounded-sm" /> Activos</span>
-            </div>
+            <h3 className="section-title mb-3 text-base flex items-center gap-2">
+              <ExclamationTriangleIcon className="w-5 h-5 text-rose-500" />
+              Conversaciones con posible fricción (7 días)
+            </h3>
+            <p className="text-xs text-gray-500 mb-2">Más de 10 mensajes enviados. Revisar si el bot les resolvió.</p>
+            <ul className="space-y-1.5">
+              {stats.posible_friccion.map(c => (
+                <li key={c.telefono} className="text-xs flex items-center justify-between gap-2">
+                  <button
+                    onClick={() => setSeleccionada(c.telefono)}
+                    className="flex items-center gap-2 min-w-0 hover:text-primary-600"
+                  >
+                    <PhoneIcon className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                    <span className="font-mono truncate">{c.telefono}</span>
+                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-gray-500">{c.mensajes} msg</span>
+                    {c.creo_solicitud ? (
+                      <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">creó solicitud</span>
+                    ) : (
+                      <span className="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded">sin solicitud</span>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>
@@ -221,7 +275,6 @@ export default function Conversaciones() {
 
       {/* Dos paneles: lista + hilo */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[600px]">
-        {/* Lista */}
         <div className="card overflow-hidden flex flex-col">
           <div className="p-3 border-b">
             <div className="relative">
@@ -263,7 +316,6 @@ export default function Conversaciones() {
                     </div>
                     <div className="flex items-center justify-between gap-2 mt-1">
                       <p className="text-xs text-gray-600 truncate flex-1">
-                        {c.ultima_direccion === 'out' && <span className="text-primary-500">Tú: </span>}
                         {c.ultimo_mensaje || <em className="text-gray-400">(sin texto)</em>}
                       </p>
                       <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full shrink-0">
@@ -277,7 +329,6 @@ export default function Conversaciones() {
           </div>
         </div>
 
-        {/* Hilo */}
         <div className="lg:col-span-2 card overflow-hidden flex flex-col bg-gray-50">
           {!seleccionada ? (
             <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
@@ -296,6 +347,11 @@ export default function Conversaciones() {
                   <p className="text-xs text-primary-100 font-mono">{hilo.telefono}</p>
                 </div>
                 {tipoBadge(hilo.tipo)}
+                {hilo.fuente === 'db-fallback' && (
+                  <span className="text-[10px] bg-amber-400 text-white px-1.5 py-0.5 rounded" title="Twilio no respondió, mostrando copia local">
+                    fallback
+                  </span>
+                )}
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-2">
                 {hilo.mensajes.length === 0 && (
@@ -305,14 +361,16 @@ export default function Conversaciones() {
                 )}
                 {hilo.mensajes.map((m, idx) => {
                   const prev = hilo.mensajes[idx - 1];
+                  const fechaActual = m.fecha || m.created_at;
+                  const fechaPrev = prev && (prev.fecha || prev.created_at);
                   const mostrarFecha = !prev ||
-                    new Date(m.created_at).toDateString() !== new Date(prev.created_at).toDateString();
+                    new Date(fechaActual).toDateString() !== new Date(fechaPrev).toDateString();
                   return (
-                    <div key={m.id}>
+                    <div key={m.sid || idx}>
                       {mostrarFecha && (
                         <div className="text-center my-3">
                           <span className="text-[11px] bg-white text-gray-500 px-2 py-0.5 rounded-full border">
-                            {new Date(m.created_at).toLocaleDateString('es-CO', {
+                            {new Date(fechaActual).toLocaleDateString('es-CO', {
                               weekday: 'long', day: '2-digit', month: 'long',
                               timeZone: 'America/Bogota',
                             })}
@@ -337,21 +395,26 @@ function Burbuja({ m }) {
   const esOut = m.direccion === 'out';
   const align = esOut ? 'justify-end' : 'justify-start';
   const color = esOut ? 'bg-primary-500 text-white' : 'bg-white text-gray-800 border';
+  const fecha = m.fecha || m.created_at;
+  const mediaItems = m.media || [];
   return (
     <div className={`flex ${align}`}>
       <div className={`max-w-[75%] rounded-2xl px-3 py-2 ${color} shadow-sm`}>
-        {m.media_path && m.media_content_type?.startsWith('audio/') && (
-          <audio controls src={m.media_path} className="max-w-full mb-1" preload="none" />
-        )}
+        {mediaItems.map((med, i) => (
+          <div key={i} className="mb-1">
+            <audio controls src={med.proxy_url} className="max-w-full" preload="none" />
+          </div>
+        ))}
         {m.body && (
           <p className="text-sm whitespace-pre-wrap break-words">{m.body}</p>
         )}
-        {!m.body && !m.media_path && m.num_media > 0 && (
-          <p className="text-xs italic opacity-70">[media no descargada]</p>
+        {!m.body && mediaItems.length === 0 && m.num_media > 0 && (
+          <p className="text-xs italic opacity-70">[media no disponible]</p>
         )}
         <div className={`text-[10px] mt-1 ${esOut ? 'text-primary-100' : 'text-gray-400'}`}>
-          {fmtHora(m.created_at)}
+          {fmtHora(fecha)}
           {m.status && esOut && <span className="ml-1">· {m.status}</span>}
+          {m.error_code && <span className="ml-1 text-rose-300">· err {m.error_code}</span>}
         </div>
       </div>
     </div>
@@ -367,27 +430,42 @@ function StatCard({ label, value, color, bg }) {
   );
 }
 
+function KpiCard({ icon: Icon, title, value, detail, color }) {
+  const colors = {
+    emerald: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    blue: 'bg-blue-50 text-blue-700 border-blue-200',
+    indigo: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  };
+  return (
+    <div className={`card p-4 border ${colors[color] || ''}`}>
+      <div className="flex items-start gap-3">
+        <Icon className="w-6 h-6 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium uppercase tracking-wide opacity-80">{title}</p>
+          <p className="text-2xl font-bold mt-1">{value}</p>
+          <p className="text-xs opacity-80 mt-2">{detail}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function BarChart({ datos, labelKey = 'dia' }) {
   const max = Math.max(1, ...datos.map(d => d.total));
   return (
     <div className="flex items-end gap-1 h-28">
       {datos.map(d => {
-        const inH = (d.entrantes / max) * 100;
-        const outH = (d.salientes / max) * 100;
+        const h = (d.total / max) * 100;
         const etiqueta = d[labelKey];
         return (
           <div
             key={etiqueta}
-            className="flex-1 flex flex-col-reverse min-w-0"
-            title={`${etiqueta}: ${d.total} (in: ${d.entrantes}, out: ${d.salientes})`}
+            className="flex-1 flex flex-col justify-end min-w-0"
+            title={`${etiqueta}: ${d.total} msgs · ${d.personas} personas`}
           >
             <div
-              className="w-full bg-primary-500 hover:bg-primary-600 transition-colors"
-              style={{ height: `${inH}%`, minHeight: d.entrantes > 0 ? '2px' : '0' }}
-            />
-            <div
-              className="w-full bg-emerald-400 hover:bg-emerald-500 rounded-t transition-colors"
-              style={{ height: `${outH}%`, minHeight: d.salientes > 0 ? '2px' : '0' }}
+              className="w-full bg-primary-500 hover:bg-primary-600 rounded-t transition-colors"
+              style={{ height: `${h}%`, minHeight: d.total > 0 ? '2px' : '0' }}
             />
           </div>
         );
@@ -396,70 +474,55 @@ function BarChart({ datos, labelKey = 'dia' }) {
   );
 }
 
-function Leyenda() {
-  return (
-    <div className="flex gap-3 text-[11px] text-gray-500 mt-2">
-      <span className="flex items-center gap-1"><span className="w-3 h-3 bg-primary-500 rounded-sm" /> Entrantes</span>
-      <span className="flex items-center gap-1"><span className="w-3 h-3 bg-emerald-400 rounded-sm" /> Salientes</span>
-    </div>
-  );
-}
+function Heatmap({ datos }) {
+  // matriz dia_semana (0..6) × hora (0..23)
+  const matriz = Array.from({ length: 7 }, () => Array(24).fill(0));
+  let max = 0;
+  datos.forEach(d => {
+    matriz[d.dia_semana][d.hora] = d.total;
+    if (d.total > max) max = d.total;
+  });
+  max = Math.max(1, max);
 
-function HourChart({ datos }) {
-  const max = Math.max(1, ...datos.map(d => d.total));
+  function color(v) {
+    if (v === 0) return 'bg-gray-100';
+    const r = v / max;
+    if (r > 0.75) return 'bg-primary-700';
+    if (r > 0.50) return 'bg-primary-500';
+    if (r > 0.25) return 'bg-primary-300';
+    return 'bg-primary-100';
+  }
+
   return (
-    <div>
-      <div className="flex items-end gap-0.5 h-28">
-        {datos.map(d => {
-          const h = (d.total / max) * 100;
-          const intensity = d.total === 0 ? 'bg-gray-100' :
-            d.total / max > 0.66 ? 'bg-primary-600' :
-            d.total / max > 0.33 ? 'bg-primary-400' : 'bg-primary-200';
-          return (
-            <div
-              key={d.hora}
-              className="flex-1 flex flex-col justify-end"
-              title={`${String(d.hora).padStart(2, '0')}:00 → ${d.total} msgs (in: ${d.entrantes}, out: ${d.salientes})`}
-            >
+    <div className="overflow-x-auto">
+      <div className="inline-block">
+        <div className="flex text-[10px] text-gray-400 pl-8">
+          {Array.from({ length: 24 }, (_, h) => (
+            <div key={h} className="w-5 text-center">{h % 6 === 0 ? h : ''}</div>
+          ))}
+        </div>
+        {DIAS.map((dia, i) => (
+          <div key={dia} className="flex items-center">
+            <div className="w-8 text-[11px] text-gray-500">{dia}</div>
+            {matriz[i].map((v, h) => (
               <div
-                className={`w-full rounded-t transition-colors ${intensity}`}
-                style={{ height: `${h}%`, minHeight: d.total > 0 ? '2px' : '0' }}
+                key={h}
+                className={`w-5 h-5 ${color(v)} border border-white`}
+                title={`${dia} ${String(h).padStart(2, '0')}:00 → ${v} msgs`}
               />
-            </div>
-          );
-        })}
-      </div>
-      <div className="flex justify-between text-[10px] text-gray-400 mt-1 px-0.5">
-        <span>00h</span><span>06h</span><span>12h</span><span>18h</span><span>23h</span>
-      </div>
-    </div>
-  );
-}
-
-function NewVsActiveChart({ datos }) {
-  const max = Math.max(1, ...datos.map(d => d.activos));
-  return (
-    <div className="flex items-end gap-1 h-28">
-      {datos.map(d => {
-        const activosH = (d.activos / max) * 100;
-        const nuevosH = (d.nuevos / max) * 100;
-        return (
-          <div
-            key={d.dia}
-            className="flex-1 relative flex flex-col justify-end min-w-0"
-            title={`${d.dia}: ${d.activos} activos (${d.nuevos} nuevos)`}
-          >
-            <div
-              className="absolute bottom-0 left-0 right-0 bg-primary-400 rounded-t"
-              style={{ height: `${activosH}%`, minHeight: d.activos > 0 ? '2px' : '0' }}
-            />
-            <div
-              className="absolute bottom-0 left-0 right-0 bg-emerald-500 rounded-t"
-              style={{ height: `${nuevosH}%`, minHeight: d.nuevos > 0 ? '2px' : '0' }}
-            />
+            ))}
           </div>
-        );
-      })}
+        ))}
+        <div className="flex items-center gap-1 text-[10px] text-gray-400 mt-2 pl-8">
+          <span>menos</span>
+          <div className="w-3 h-3 bg-gray-100 border border-white" />
+          <div className="w-3 h-3 bg-primary-100 border border-white" />
+          <div className="w-3 h-3 bg-primary-300 border border-white" />
+          <div className="w-3 h-3 bg-primary-500 border border-white" />
+          <div className="w-3 h-3 bg-primary-700 border border-white" />
+          <span>más</span>
+        </div>
+      </div>
     </div>
   );
 }
