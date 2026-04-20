@@ -249,7 +249,10 @@ function Burbuja({ m }) {
         <div className={`text-[10px] mt-1 ${esOut ? 'text-primary-100' : 'text-gray-400'}`}>
           {fmtHora(fecha)}
           {m.status && esOut && <span className="ml-1">· {m.status}</span>}
-          {m.error_code && <span className="ml-1 text-rose-300">· err {m.error_code}</span>}
+          {/* Twilio emite error_code 12300 en TODOS los entrantes cuando el
+              webhook de n8n no responde con TwiML — es cosmético, no afecta.
+              Solo mostramos el código en salientes (indica fallo real de envío). */}
+          {m.error_code && esOut && <span className="ml-1 text-rose-300">· err {m.error_code}</span>}
         </div>
       </div>
     </div>
