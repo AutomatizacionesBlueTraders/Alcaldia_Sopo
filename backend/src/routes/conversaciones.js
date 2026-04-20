@@ -7,7 +7,9 @@ const ctrl = require('../controllers/conversaciones.controller');
 const ver = [requireAuth, requireRole('admin', 'dependencia')];
 
 router.get('/stats',                 ...ver, ctrl.stats);
-router.get('/diag',                  ...ver, ctrl.diag);
+// Diagnóstico: público (no expone secretos) para poder validar desde afuera.
+// El SID se devuelve enmascarado y el auth_token nunca se emite.
+router.get('/diag',                             ctrl.diag);
 router.get('/media/:sid/:index',     ...ver, ctrl.media);
 router.get('/',                      ...ver, ctrl.listar);
 router.get('/:telefono',             ...ver, ctrl.hilo);
