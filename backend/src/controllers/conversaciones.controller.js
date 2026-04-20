@@ -515,7 +515,7 @@ async function diag(req, res) {
       : null,
   };
   try {
-    const convs = await listConversaciones({ limit: 100 });
+    const convs = await listConversaciones({ limit: 1000 });
     out.twilio_ok = true;
     out.conversaciones_twilio = convs.length;
     out.muestra = convs.slice(0, 3).map(c => ({
@@ -523,6 +523,20 @@ async function diag(req, res) {
       total_mensajes: c.total_mensajes,
       ultima_fecha: c.ultima_fecha,
     }));
+
+    // Reproduce paso a paso lo que hace listar() para detectar el fallo
+    try {
+      const telefonos = convs.map(c => c.telefono);
+      out.tel_count = telefonos.length;
+      out.tel_muestra = telefonos.slice(0, 5);
+      const usuarios = await db('usuarios').whereIn('telefono', telefonos).select('telefono', 'nombre');
+      out.match_usuarios = usuarios.length;
+      const conductores = await db('conductores').whereIn('telefono', telefonos).select('telefono', 'nombre');
+      out.match_conductores = conductores.length;
+    } catch (err) {
+      out.enriquecer_error = err.message;
+      out.enriquecer_stack = (err.stack || '').split('\n').slice(0, 3).join(' | ');
+    }
   } catch (err) {
     out.twilio_ok = false;
     out.twilio_error = err.message;
