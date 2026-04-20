@@ -7,6 +7,46 @@ function normalizarTelefono(raw) {
   return String(raw).replace(/\D/g, '') || null;
 }
 
+// Dada una lista de teléfonos, devuelve { [telefono]: { nombre, tipo } }.
+// La tabla usuarios NO tiene columna telefono (los usuarios del dashboard se
+// identifican por email), así que solo se consulta conductores y también se
+// intenta por solicitudes.contacto_telefono para identificar contactos de
+// dependencias que pidieron servicio.
+async function resolverNombres(telefonos) {
+  const tmap = {};
+  if (!telefonos || !telefonos.length) return tmap;
+
+  try {
+    const conductores = await db('conductores')
+      .whereIn('telefono', telefonos)
+      .select('telefono', 'nombre');
+    conductores.forEach(c => {
+      const key = normalizarTelefono(c.telefono);
+      if (key) tmap[key] = { nombre: c.nombre, tipo: 'conductor' };
+    });
+  } catch (err) {
+    console.error('resolverNombres conductores:', err.message);
+  }
+
+  try {
+    const contactos = await db('solicitudes')
+      .whereIn(db.raw("REGEXP_REPLACE(COALESCE(contacto_telefono, ''), '\\D', '', 'g')"), telefonos)
+      .whereNotNull('contacto_nombre')
+      .select('contacto_telefono', 'contacto_nombre')
+      .orderBy('created_at', 'desc');
+    contactos.forEach(c => {
+      const key = normalizarTelefono(c.contacto_telefono);
+      if (key && !tmap[key]) {
+        tmap[key] = { nombre: c.contacto_nombre, tipo: 'dependencia' };
+      }
+    });
+  } catch (err) {
+    console.error('resolverNombres solicitudes:', err.message);
+  }
+
+  return tmap;
+}
+
 // ─── POST /api/whatsapp/mensaje (n8n, api-key) ──────────────────────────────
 // Solo para mensajes entrantes (lo llama n8n desde un único nodo colgado
 // del TWILIO WEBHOOK). Guarda metadatos mínimos para poder sacar estadísticas.
@@ -83,13 +123,7 @@ async function listar(req, res) {
     }
 
     const telefonos = grupos.map(g => g.telefono);
-    const tmap = {};
-    if (telefonos.length) {
-      const usuarios = await db('usuarios').whereIn('telefono', telefonos).select('telefono', 'nombre');
-      const conductores = await db('conductores').whereIn('telefono', telefonos).select('telefono', 'nombre');
-      usuarios.forEach(u => { tmap[normalizarTelefono(u.telefono)] = { nombre: u.nombre, tipo: 'dependencia' }; });
-      conductores.forEach(c => { tmap[normalizarTelefono(c.telefono)] = { nombre: c.nombre, tipo: 'conductor' }; });
-    }
+    const tmap = await resolverNombres(telefonos);
 
     const result = grupos.map(g => ({
       ...g,
@@ -149,13 +183,8 @@ async function hilo(req, res) {
 
     const limit = Math.min(parseInt(req.query.limit) || 200, 1000);
 
-    let meta = null;
-    const u = await db('usuarios').where({ telefono }).first();
-    if (u) meta = { nombre: u.nombre, tipo: 'dependencia' };
-    if (!meta) {
-      const c = await db('conductores').where({ telefono }).first();
-      if (c) meta = { nombre: c.nombre, tipo: 'conductor' };
-    }
+    const tmap = await resolverNombres([telefono]);
+    const meta = tmap[telefono] || null;
 
     let mensajes = [];
     let fuente = 'twilio';
@@ -234,13 +263,7 @@ async function stats(req, res) {
       LIMIT 10
     `);
     const telefonosTop = top.map(r => r.telefono_usuario);
-    const tmap = {};
-    if (telefonosTop.length) {
-      const usuarios = await db('usuarios').whereIn('telefono', telefonosTop).select('telefono', 'nombre');
-      const conductores = await db('conductores').whereIn('telefono', telefonosTop).select('telefono', 'nombre');
-      usuarios.forEach(u => { tmap[normalizarTelefono(u.telefono)] = { nombre: u.nombre, tipo: 'dependencia' }; });
-      conductores.forEach(c => { tmap[normalizarTelefono(c.telefono)] = { nombre: c.nombre, tipo: 'conductor' }; });
-    }
+    const tmap = await resolverNombres(telefonosTop);
 
     // 3. Serie por día (30 días, rellena huecos)
     const { rows: porDia } = await db.raw(`
@@ -524,15 +547,13 @@ async function diag(req, res) {
       ultima_fecha: c.ultima_fecha,
     }));
 
-    // Reproduce paso a paso lo que hace listar() para detectar el fallo
+    // Reproduce el enriquecimiento de nombres para detectar fallos
     try {
       const telefonos = convs.map(c => c.telefono);
       out.tel_count = telefonos.length;
       out.tel_muestra = telefonos.slice(0, 5);
-      const usuarios = await db('usuarios').whereIn('telefono', telefonos).select('telefono', 'nombre');
-      out.match_usuarios = usuarios.length;
-      const conductores = await db('conductores').whereIn('telefono', telefonos).select('telefono', 'nombre');
-      out.match_conductores = conductores.length;
+      const tmap = await resolverNombres(telefonos);
+      out.nombres_resueltos = Object.keys(tmap).length;
     } catch (err) {
       out.enriquecer_error = err.message;
       out.enriquecer_stack = (err.stack || '').split('\n').slice(0, 3).join(' | ');
