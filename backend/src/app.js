@@ -14,8 +14,17 @@ const conversacionesRoutes = require('./routes/conversaciones');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
+// Detrás del proxy inverso (EasyPanel/Vercel/nginx). Necesario para que
+// express-rate-limit y req.ip identifiquen la IP real del cliente.
+app.set('trust proxy', 1);
+
+// CORS: si CORS_ORIGINS está definido (CSV), solo esos orígenes; si no, abierto.
+const corsOrigins = (process.env.CORS_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
+app.use(cors(
+  corsOrigins.length
+    ? { origin: corsOrigins, credentials: true }
+    : {}
+));
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 // Espejo bajo /api para que el proxy inverso (EasyPanel solo proxea /api al backend)

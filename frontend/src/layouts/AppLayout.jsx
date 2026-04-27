@@ -27,6 +27,7 @@ const NAV_ITEMS = {
     { to: '/admin/conductores', label: 'Conductores', icon: UsersIcon },
     { to: '/admin/novedades', label: 'Novedades', icon: ExclamationTriangleIcon },
     { to: '/admin/combustible', label: 'Combustible', icon: BoltIcon },
+    { to: '/admin/usuarios', label: 'Usuarios', icon: UsersIcon },
     { to: '/admin/conversaciones', label: 'Conversaciones', icon: ChatBubbleLeftRightIcon },
     { to: '/admin/estadisticas-wa', label: 'Estadísticas WA', icon: ChartBarIcon },
   ],

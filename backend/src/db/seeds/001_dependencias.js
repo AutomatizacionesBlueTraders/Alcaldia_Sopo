@@ -51,7 +51,10 @@ exports.seed = async function(knex) {
   ]);
 
   // Usuarios de prueba (password: Sopo2026*)
+  // email_verificado=true y debe_cambiar_password=false para que puedan
+  // loguearse sin pasar por el flujo de invitación por email.
   const hash = await bcrypt.hash('Sopo2026*', 10);
+  const seedDefaults = { email_verificado: true, debe_cambiar_password: false };
 
   await knex('usuarios').insert([
     // Admin
@@ -89,6 +92,10 @@ exports.seed = async function(knex) {
     { id: 30, nombre: 'Funcionario Hacienda',                 email: 'hacienda@sopo.gov.co',        password_hash: hash, rol: 'dependencia', dependencia_id: 27 },
     { id: 31, nombre: 'Funcionario SISBÉN',                   email: 'sisben@sopo.gov.co',          password_hash: hash, rol: 'dependencia', dependencia_id: 28 },
   ]);
+
+  // Marcar todos los usuarios de prueba como verificados, sin obligación de
+  // cambiar contraseña al primer login.
+  await knex('usuarios').update(seedDefaults);
 
   // Conductores (usuario_id apunta a los ids 2 y 3 de la tabla usuarios de arriba)
   await knex('conductores').insert([

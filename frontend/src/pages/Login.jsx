@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { TruckIcon } from '@heroicons/react/24/outline';
 
@@ -23,9 +23,13 @@ export default function Login() {
     setLoading(true);
     try {
       const user = await login(email, password);
-      navigate(ROLE_ROUTES[user.rol] || '/');
-    } catch {
-      setError('Credenciales inválidas');
+      if (user.debe_cambiar_password) {
+        navigate('/cambiar-password', { replace: true });
+      } else {
+        navigate(ROLE_ROUTES[user.rol] || '/');
+      }
+    } catch (err) {
+      setError(err?.response?.data?.error || 'Credenciales inválidas');
     } finally {
       setLoading(false);
     }
@@ -124,6 +128,15 @@ export default function Login() {
                 </svg>
               ) : 'Ingresar'}
             </button>
+
+            <div className="text-center space-y-1.5">
+              <Link to="/recuperar-password" className="block text-sm text-primary-600 hover:underline">
+                ¿Olvidaste tu contraseña?
+              </Link>
+              <Link to="/recuperar-password/codigo" className="block text-xs text-gray-500 hover:text-primary-600 hover:underline">
+                ¿Te enviaron un código por correo? Úsalo aquí
+              </Link>
+            </div>
           </form>
 
           <p className="text-center text-xs text-gray-400 mt-8">

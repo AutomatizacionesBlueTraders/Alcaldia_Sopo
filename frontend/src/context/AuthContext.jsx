@@ -24,12 +24,17 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  async function refreshMe() {
+    const { data } = await api.get('/auth/me');
+    setUser(data);
+    return data;
+  }
+
   useEffect(() => {
     ensureTabIsolation();
     const token = sessionStorage.getItem('accessToken');
     if (token) {
-      api.get('/auth/me')
-        .then(({ data }) => setUser(data))
+      refreshMe()
         .catch(() => {
           sessionStorage.clear();
           setUser(null);
@@ -56,8 +61,16 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
+  // Cambio de contraseña (usuario autenticado). Si debe_cambiar_password=true,
+  // el backend no exige la actual.
+  async function updatePassword({ nueva_password, password_actual }) {
+    await api.post('/auth/change-password', { nueva_password, password_actual });
+    // Refresca /me para limpiar el flag debe_cambiar_password.
+    try { await refreshMe(); } catch { /* ignore */ }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, updatePassword, refreshMe }}>
       {children}
     </AuthContext.Provider>
   );

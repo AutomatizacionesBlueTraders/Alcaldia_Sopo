@@ -3,6 +3,10 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppLayout from './layouts/AppLayout';
 import Login from './pages/Login';
+import RecuperarPassword from './pages/RecuperarPassword';
+import RestablecerPassword from './pages/RestablecerPassword';
+import IngresarCodigoRecuperacion from './pages/IngresarCodigoRecuperacion';
+import CambiarPassword from './pages/CambiarPassword';
 import NoAutorizado from './pages/NoAutorizado';
 
 // Dependencia
@@ -23,6 +27,7 @@ import DetalleConductor from './pages/admin/DetalleConductor';
 import Documentos from './pages/admin/Documentos';
 import AdminNovedades from './pages/admin/Novedades';
 import AdminCombustible from './pages/admin/Combustible';
+import AdminUsuarios from './pages/admin/Usuarios';
 
 // Conversaciones + Estadísticas (compartidas admin + dependencia)
 import Conversaciones from './pages/Conversaciones';
@@ -41,6 +46,10 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/recuperar-password" element={<RecuperarPassword />} />
+          <Route path="/recuperar-password/codigo" element={<IngresarCodigoRecuperacion />} />
+          <Route path="/restablecer-password" element={<RestablecerPassword />} />
+          <Route path="/cambiar-password" element={<CambiarPassword />} />
           <Route path="/no-autorizado" element={<NoAutorizado />} />
 
           {/* Dependencia */}
@@ -74,6 +83,7 @@ export default function App() {
             <Route path="documentos" element={<Documentos />} />
             <Route path="novedades" element={<AdminNovedades />} />
             <Route path="combustible" element={<AdminCombustible />} />
+            <Route path="usuarios" element={<AdminUsuarios />} />
             <Route path="conversaciones" element={<Conversaciones />} />
             <Route path="estadisticas-wa" element={<EstadisticasWhatsapp />} />
           </Route>
