@@ -54,15 +54,27 @@ export default function RestablecerPassword() {
     }
   }
 
+  const [resendError, setResendError] = useState('');
+
   async function handleResend(e) {
     e.preventDefault();
+    setResendError('');
     setResending(true);
     try {
       await api.post('/auth/forgot-password', { email: resendEmail.trim() });
       setResent(true);
-    } catch {
-      // Silencioso — el backend es anti-enumeración.
-      setResent(true);
+    } catch (err) {
+      const status = err?.response?.status;
+      const data = err?.response?.data || {};
+      if (status === 404) {
+        setResendError(data.error || 'Este correo no está registrado en el sistema.');
+      } else if (status === 403) {
+        setResendError(data.error || 'Este usuario está desactivado.');
+      } else if (status === 429) {
+        setResendError('Demasiadas solicitudes. Espera unos minutos.');
+      } else {
+        setResendError(data.error || 'No se pudo enviar el correo. Intenta de nuevo.');
+      }
     } finally {
       setResending(false);
     }
@@ -103,14 +115,19 @@ export default function RestablecerPassword() {
 
           {resent ? (
             <div className="bg-green-50 text-green-700 p-4 rounded-lg text-sm border border-green-100">
-              Si el correo existe, recibirás un correo nuevo (con código y enlace)
-              en los próximos minutos. Caduca en 1 hora.
+              Recibirás un correo nuevo (con código y enlace) en los próximos minutos.
+              Caduca en 1 hora.
             </div>
           ) : (
             <form onSubmit={handleResend} className="space-y-4">
               <p className="text-sm text-gray-600">
                 Ingresa tu correo y te enviaremos un correo nuevo con código y enlace:
               </p>
+              {resendError && (
+                <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm border border-red-100">
+                  {resendError}
+                </div>
+              )}
               <input
                 type="email"
                 value={resendEmail}

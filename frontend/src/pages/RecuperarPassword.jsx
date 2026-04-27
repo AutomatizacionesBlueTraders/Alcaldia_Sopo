@@ -14,11 +14,20 @@ export default function RecuperarPassword() {
     setError('');
     setLoading(true);
     try {
-      // El backend es genérico anti-enumeración: siempre responde OK.
       await api.post('/auth/forgot-password', { email: email.trim() });
       setSent(true);
-    } catch {
-      setError('No se pudo conectar con el servidor. Intenta de nuevo.');
+    } catch (err) {
+      const status = err?.response?.status;
+      const data = err?.response?.data || {};
+      if (status === 404) {
+        setError(data.error || 'Este correo no está registrado en el sistema.');
+      } else if (status === 403) {
+        setError(data.error || 'Este usuario está desactivado. Contacta al administrador.');
+      } else if (status === 429) {
+        setError('Demasiadas solicitudes. Espera unos minutos antes de intentar de nuevo.');
+      } else {
+        setError(data.error || 'No se pudo conectar con el servidor. Intenta de nuevo.');
+      }
     } finally {
       setLoading(false);
     }
@@ -40,8 +49,8 @@ export default function RecuperarPassword() {
         {sent ? (
           <div className="space-y-4">
             <div className="bg-green-50 text-green-700 p-4 rounded-lg text-sm border border-green-100">
-              Si el correo existe, en los próximos minutos recibirás un correo
-              con un <strong>código de 6 dígitos</strong> y un botón para restablecer.
+              En los próximos minutos recibirás un correo con un
+              <strong> código de 6 dígitos</strong> y un botón para restablecer.
               Revisa también la carpeta de spam. Caduca en 1 hora.
             </div>
             <Link

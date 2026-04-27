@@ -110,15 +110,23 @@ export default function IngresarCodigoRecuperacion() {
     setResending(true);
     setResent(false);
     try {
-      // Anti-enumeración: el backend siempre responde 200.
       await api.post('/auth/forgot-password', { email: email.trim() });
       setResent(true);
       setReason(null);
       setError('');
       setCode('');
-    } catch {
-      // Aún silencioso (el backend ya es genérico).
-      setResent(true);
+    } catch (err) {
+      const status = err?.response?.status;
+      const data = err?.response?.data || {};
+      if (status === 404) {
+        setError(data.error || 'Este correo no está registrado en el sistema.');
+      } else if (status === 403) {
+        setError(data.error || 'Este usuario está desactivado.');
+      } else if (status === 429) {
+        setError('Demasiadas solicitudes. Espera unos minutos.');
+      } else {
+        setError(data.error || 'No se pudo enviar el código. Intenta de nuevo.');
+      }
     } finally {
       setResending(false);
     }

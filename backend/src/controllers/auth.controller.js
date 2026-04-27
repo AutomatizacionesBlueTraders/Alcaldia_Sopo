@@ -180,19 +180,27 @@ async function me(req, res) {
 }
 
 // ═══════ FORGOT / RESET / CHANGE ═══════
+// Nota: este endpoint sí distingue entre email registrado y no registrado.
+// Es un sistema interno de la Alcaldía con emails institucionales: el riesgo
+// de enumeración es bajo y la UX gana mucho con un mensaje claro. El rate
+// limiter (5/hora por IP) sigue activo para prevenir abuso.
 async function forgotPassword(req, res) {
-  const mensaje =
-    'Si el correo existe en el sistema, recibirás un enlace para restablecer tu contraseña en los próximos minutos.';
   try {
     const email = (req.body?.email || '').toLowerCase().trim();
     if (!email) return res.status(400).json({ error: 'Email requerido' });
 
     const user = await db('usuarios').where({ email }).first();
-
-    // Anti-enumeración: siempre responder mensaje genérico.
-    if (!user || !user.activo) {
-      console.log('[auth] forgot_password_unknown_or_inactive', { email });
-      return res.json({ ok: true, mensaje });
+    if (!user) {
+      return res.status(404).json({
+        error: 'Este correo no está registrado en el sistema.',
+        code: 'EMAIL_NOT_FOUND',
+      });
+    }
+    if (!user.activo) {
+      return res.status(403).json({
+        error: 'Este usuario está desactivado. Contacta al administrador.',
+        code: 'USER_DISABLED',
+      });
     }
 
     await createAndSendResetLink({
@@ -201,11 +209,13 @@ async function forgotPassword(req, res) {
       nombre: user.nombre,
       isWelcome: false,
     });
-    res.json({ ok: true, mensaje });
+    res.json({
+      ok: true,
+      mensaje: 'Te enviamos un correo con un código de 6 dígitos y un enlace. Revisa tu bandeja (y spam). Caduca en 1 hora.',
+    });
   } catch (err) {
     console.error('forgot_password_error', err);
-    // Incluso ante error interno, responder genérico para no filtrar señal.
-    res.json({ ok: true, mensaje });
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 }
 
